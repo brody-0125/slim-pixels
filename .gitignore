@@ -1,0 +1,17 @@
+# Generated Dart / Rust / benchmark outputs
+.dart_tool/
+**/target/
+/build/
+**/__pycache__/
+*.py[cod]
+
+# Local editor / OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local credentials (never commit)
+.env
+.env.*
+!.env.example

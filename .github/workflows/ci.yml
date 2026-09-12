@@ -1,0 +1,150 @@
+name: SDK compatibility
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      sdks: ${{ steps.discover.outputs.sdks }}
+      latest: ${{ steps.discover.outputs.latest }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tool/dart_matrix_test.py
+      - id: discover
+        run: python3 tool/dart_matrix.py
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install 1.97.1 --profile minimal --component rustfmt
+      - run: cargo +1.97.1 fmt --check --manifest-path native/Cargo.toml
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake nasm
+          bash tool/build-linux.sh
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./tool/build.ps1
+      - name: Include redistribution notices
+        shell: bash
+        run: |
+          mkdir -p build/artifact
+          cp -R native/bin/${{ runner.os == 'Windows' && 'windows-x64' || 'linux-x64' }} build/artifact/
+          cp -R third_party build/artifact/
+          cp LICENSE THIRD_PARTY_NOTICES.md build/artifact/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.os }}
+          path: build/artifact/
+          if-no-files-found: error
+          retention-days: 7
+  dart:
+    needs: [matrix, native]
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+        sdk: ${{ fromJSON(needs.matrix.outputs.sdks) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-${{ matrix.os }}
+          path: native/bin/
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: ${{ matrix.sdk }}
+      - run: dart pub get --enforce-lockfile
+      - if: matrix.sdk == '3.10.0'
+        run: dart pub downgrade
+      - run: dart analyze --fatal-infos
+      - if: matrix.sdk == needs.matrix.outputs.latest
+        run: dart format --output=none --set-exit-if-changed lib test example tool/validation
+      - if: runner.os == 'Linux'
+        run: |
+          export LD_LIBRARY_PATH="$PWD/native/bin/linux-x64"
+          dart run test/smoke.dart native/bin/linux-x64/libslim_pixels.so test/fixtures/rgb.png
+          mkdir -p build
+          dart compile exe test/smoke.dart -o build/smoke
+          ./build/smoke native/bin/linux-x64/libslim_pixels.so test/fixtures/rgb.png
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dart run test/smoke.dart native/bin/windows-x64/slim_pixels.dll test/fixtures/rgb.png
+          if ($LASTEXITCODE -ne 0) { throw 'JIT failed' }
+          New-Item -ItemType Directory -Force build | Out-Null
+          dart compile exe test/smoke.dart -o build/smoke.exe
+          if ($LASTEXITCODE -ne 0) { throw 'AOT compilation failed' }
+          ./build/smoke.exe native/bin/windows-x64/slim_pixels.dll test/fixtures/rgb.png
+          if ($LASTEXITCODE -ne 0) { throw 'AOT failed' }
+      - if: matrix.sdk == needs.matrix.outputs.latest && runner.os == 'Linux'
+        run: |
+          export LD_LIBRARY_PATH="$PWD/native/bin/linux-x64"
+          dart run tool/validation/golden_check.dart native/bin/linux-x64/libslim_pixels.so test/golden
+          dart compile exe tool/validation/golden_check.dart -o build/goldens
+          ./build/goldens native/bin/linux-x64/libslim_pixels.so test/golden
+      - if: matrix.sdk == needs.matrix.outputs.latest && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          dart run tool/validation/golden_check.dart native/bin/windows-x64/slim_pixels.dll test/golden
+          if ($LASTEXITCODE -ne 0) { throw 'JIT goldens failed' }
+          dart compile exe tool/validation/golden_check.dart -o build/goldens.exe
+          if ($LASTEXITCODE -ne 0) { throw 'AOT goldens compilation failed' }
+          ./build/goldens.exe native/bin/windows-x64/slim_pixels.dll test/golden
+          if ($LASTEXITCODE -ne 0) { throw 'AOT goldens failed' }
+  quality:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-ubuntu-24.04
+          path: native/bin/
+      - run: rustup toolchain install 1.97.1 --profile minimal
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y valgrind gcc
+      - run: bash tool/memory_gate.sh
+      - run: python3 tool/quality_gate.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: quality-and-memory-evidence
+          path: |
+            build/memory/*.log
+            build/quality/results/
+          if-no-files-found: warn
+          retention-days: 14
+  required:
+    if: always()
+    needs: [matrix, native, dart, quality]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every SDK and platform to pass
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          assert all(job['result'] == 'success' for job in json.loads(os.environ['RESULTS']).values())
+          PY

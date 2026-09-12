@@ -1,0 +1,27 @@
+[package]
+name = "slim_pixels"
+version = "0.1.0"
+edition = "2024"
+description = "Bounded image transformation pipeline for Dart FFI"
+license = "MIT"
+publish = false
+
+[features]
+default = ["turbo-jpeg"]
+turbo-jpeg = []
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+image = { version = "=0.25.8", default-features = false, features = ["jpeg", "png", "webp"] }
+fast_image_resize = { version = "=6.1.0", features = ["image"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true

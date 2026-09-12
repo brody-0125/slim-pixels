@@ -1,0 +1,208 @@
+[
+  {
+    "alpha": false,
+    "category": "checker",
+    "file": "synthetic_00_64x64.png",
+    "height": 64,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 64,
+    "sha256": "6e2ea254da5d6eb6e1d6aea9f0c61c6f55e61f60e19bf037efb9f0dc26feb03d",
+    "encoded_bytes": 1496
+  },
+  {
+    "alpha": false,
+    "category": "gradient",
+    "file": "synthetic_01_127x95.jpg",
+    "height": 95,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 127,
+    "sha256": "d7671510087649a7ccd08c17f733ba4e28678347c1d170c45d30e0226ee2dba4",
+    "encoded_bytes": 3378
+  },
+  {
+    "alpha": false,
+    "category": "noise",
+    "file": "synthetic_02_256x256.webp",
+    "height": 256,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 256,
+    "sha256": "fd8a896fb8d4ddeb17ee31ab82315c5b2b7892729fd57a265c95a047d1ebee49",
+    "encoded_bytes": 196702
+  },
+  {
+    "alpha": false,
+    "category": "document",
+    "file": "synthetic_03_640x480.png",
+    "height": 480,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 640,
+    "sha256": "c80e3bcfaf0acd8c10bbf92f31bc406b6ee9895f4be6d1e9b9508b79082878c6",
+    "encoded_bytes": 6157
+  },
+  {
+    "alpha": false,
+    "category": "ui-blocks",
+    "file": "synthetic_04_1023x769.jpg",
+    "height": 769,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 1023,
+    "sha256": "a701f9994c71849ebb95e1e6ba64042bb592fd5df12bc96fb818a1e830be020a",
+    "encoded_bytes": 182438
+  },
+  {
+    "alpha": false,
+    "category": "waves",
+    "file": "synthetic_05_2048x1536.webp",
+    "height": 1536,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 2048,
+    "sha256": "0394cce30b9259af779d0bd19e2c3d69a5d5dcabfc2bd696fc9676ca3db31ceb",
+    "encoded_bytes": 1734232
+  },
+  {
+    "alpha": false,
+    "category": "high-frequency",
+    "file": "synthetic_06_4096x2048.png",
+    "height": 2048,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 4096,
+    "sha256": "361320045a81b660275aecfc554cc9909c43942a6e359b2342ae5a3f657e5c41",
+    "encoded_bytes": 12011328
+  },
+  {
+    "alpha": false,
+    "category": "checker",
+    "file": "synthetic_07_512x2048.jpg",
+    "height": 2048,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 512,
+    "sha256": "944d0a269676893701d7c99f0e21a1ad279c563b6d095cde154fdac560cce04b",
+    "encoded_bytes": 1058229
+  },
+  {
+    "alpha": false,
+    "category": "gradient",
+    "file": "synthetic_08_4096x512.webp",
+    "height": 512,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 4096,
+    "sha256": "2e954c3c6f08c60a43a029103a7f133be24148d9a8b94b21a6e689b940137cab",
+    "encoded_bytes": 1658
+  },
+  {
+    "alpha": false,
+    "category": "noise",
+    "file": "synthetic_09_800x1200.png",
+    "height": 1200,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 800,
+    "sha256": "6995da61b3a01c203db69d1292e0942892a4ce390a7e263f548690a4029496ad",
+    "encoded_bytes": 2881483
+  },
+  {
+    "alpha": false,
+    "category": "document",
+    "file": "synthetic_10_1920x1080.jpg",
+    "height": 1080,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 1920,
+    "sha256": "920cf272270bbbc49a8167846bcbc22dace5951075ee6b7a20d1971626768d01",
+    "encoded_bytes": 320703
+  },
+  {
+    "alpha": true,
+    "category": "ui-blocks",
+    "file": "synthetic_11_257x259.png",
+    "height": 259,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 257,
+    "sha256": "b226dac808017e6f196620f44daffbf2f354dbffcb52600f58aa9629d5b27d87",
+    "encoded_bytes": 61569
+  },
+  {
+    "alpha": true,
+    "category": "waves",
+    "file": "synthetic_12_1024x1024.png",
+    "height": 1024,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 1024,
+    "sha256": "1842627ab307df07bd6cb06e47463ebeaac1536a5713294d1547632679498b51",
+    "encoded_bytes": 1045670
+  },
+  {
+    "alpha": true,
+    "category": "high-frequency",
+    "file": "synthetic_13_2048x1024.png",
+    "height": 1024,
+    "origin": "procedural xorshift32 seed 0x12345678 + index",
+    "width": 2048,
+    "sha256": "c3e2bcb4b7dd2e6925297ed1278940001f1423858f9c2ed9b65ed2ee59b8cfe8",
+    "encoded_bytes": 3532345
+  },
+  {
+    "alpha": false,
+    "category": "photographic-or-microscopy",
+    "file": "photo_Bells-Beach.png",
+    "height": 960,
+    "origin": "https://github.com/scikit-image/skimage-tutorials/blob/26e2d4d27113a86b9dd99dc7e559ab25aa782436/images/Bells-Beach.jpg",
+    "preparation": "decoded, normalized RGB8, PNG encoded once outside timing",
+    "width": 1280,
+    "sha256": "1cecd6655669b77635201b74198cc05b5f8009bb686f7a6ccc9b8c2cf7e94695",
+    "encoded_bytes": 2573177
+  },
+  {
+    "alpha": false,
+    "category": "photographic-or-microscopy",
+    "file": "photo_balloon.png",
+    "height": 300,
+    "origin": "https://github.com/scikit-image/skimage-tutorials/blob/26e2d4d27113a86b9dd99dc7e559ab25aa782436/images/balloon.jpg",
+    "preparation": "decoded, normalized RGB8, PNG encoded once outside timing",
+    "width": 225,
+    "sha256": "64e7ed33ff6dd99b94739c3a3a40711059c23b5d534442330775e150c7c0ee90",
+    "encoded_bytes": 98587
+  },
+  {
+    "alpha": false,
+    "category": "photographic-or-microscopy",
+    "file": "photo_chapel_floor.png",
+    "height": 277,
+    "origin": "https://github.com/scikit-image/skimage-tutorials/blob/26e2d4d27113a86b9dd99dc7e559ab25aa782436/images/chapel_floor.png",
+    "preparation": "decoded, normalized RGB8, PNG encoded once outside timing",
+    "width": 376,
+    "sha256": "f9f644630f9518e501c128db8e4196665e614b14f296257505858e1db16545a9",
+    "encoded_bytes": 197643
+  },
+  {
+    "alpha": false,
+    "category": "photographic-or-microscopy",
+    "file": "photo_forest.png",
+    "height": 383,
+    "origin": "https://github.com/scikit-image/skimage-tutorials/blob/26e2d4d27113a86b9dd99dc7e559ab25aa782436/images/forest.jpg",
+    "preparation": "decoded, normalized RGB8, PNG encoded once outside timing",
+    "width": 576,
+    "sha256": "7acc49d805b8e79dd161ba7a3a535e0d34faa129908484b92da1f1f255fe7165",
+    "encoded_bytes": 540759
+  },
+  {
+    "alpha": false,
+    "category": "photographic-or-microscopy",
+    "file": "photo_spices.png",
+    "height": 683,
+    "origin": "https://github.com/scikit-image/skimage-tutorials/blob/26e2d4d27113a86b9dd99dc7e559ab25aa782436/images/spices.jpg",
+    "preparation": "decoded, normalized RGB8, PNG encoded once outside timing",
+    "width": 1024,
+    "sha256": "06d5974822ca76389c546ee3e48acd910bea1cfe7487d02f1b12c97005142189",
+    "encoded_bytes": 1243279
+  },
+  {
+    "alpha": false,
+    "category": "photographic-or-microscopy",
+    "file": "photo_zebrafish-spinal-cord-color.png",
+    "height": 1024,
+    "origin": "https://github.com/scikit-image/skimage-tutorials/blob/26e2d4d27113a86b9dd99dc7e559ab25aa782436/images/zebrafish-spinal-cord-color.png",
+    "preparation": "decoded, normalized RGB8, PNG encoded once outside timing",
+    "width": 1024,
+    "sha256": "b387a49931a4e45b332c3156ec72c7560ed2457944478836fa510567a5218377",
+    "encoded_bytes": 393130
+  }
+]

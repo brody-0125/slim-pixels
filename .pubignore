@@ -1,0 +1,3 @@
+native/target/
+build/
+.dart_tool/
