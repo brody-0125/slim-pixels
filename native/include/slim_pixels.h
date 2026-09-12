@@ -5,6 +5,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+uint32_t slim_abi_version(void);
 /* Inputs are borrowed. Output slots must be writable and disjoint from inputs.
  * Returns 0: encoded bytes, 1: UTF-8 error, 2: invalid ABI arguments.
  * Free every returned non-null buffer exactly once using its original length.

@@ -38,3 +38,7 @@ dart compile exe test/smoke.dart -o build/smoke
 ```
 
 참고: [setup-dart](https://github.com/dart-lang/setup-dart), [Dart stable archive](https://dart.dev/get-dart/archive).
+
+## Code Assets 도입 이후
+
+현재 AOT 명령은 `dart compile exe` 대신 `python tool/aot_check.py <검증 Dart 파일> <인수...>`입니다. 모든 SDK/OS에서 별도 소비자 설치와 이동한 번들 실행도 검사합니다. v 태그에서는 전체 게이트 성공 후 플랫폼별 바이너리를 draft release로 묶습니다. 자세한 배포 계약은 `docs/DISTRIBUTION.md`를 참고하세요.

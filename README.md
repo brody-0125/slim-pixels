@@ -6,7 +6,7 @@ Dart에서 이미지의 크기와 형태를 변환하고 PNG, JPEG, WebP로 인�
 
 - Dart 3.10.0 이상, 4.0.0 미만
 - Windows x64: 사전 빌드 DLL 및 소스 빌드
-- Linux x64: 소스 빌드
+- Linux x64: 사전 빌드 공유 라이브러리 및 소스 빌드
 - 입력: PNG/JPEG/WebP에서 디코딩한 RGB8 또는 RGBA8 이미지
 - 작업: 크기 변경, 영역 자르기, 90도 단위 회전, 좌우·상하 반전
 - 출력: PNG, JPEG, 무손실 WebP
@@ -15,7 +15,7 @@ Dart에서 이미지의 크기와 형태를 변환하고 PNG, JPEG, WebP로 인�
 
 ## 사용
 
-현재는 로컬 경로 의존성과 네이티브 라이브러리를 직접 배치해 사용합니다.
+현재는 로컬 경로 의존성으로 사용합니다. 포함된 네이티브 바이너리는 build hook이 해시를 확인하고 앱에 번들링합니다. pub.dev에는 아직 게시하지 않았습니다.
 
 ```yaml
 dependencies:
@@ -29,7 +29,7 @@ dependencies:
 import 'dart:io';
 import 'package:slim_pixels/slim_pixels.dart';
 
-final pixels = SlimPixels('/absolute/path/native/bin/windows-x64/slim_pixels.dll');
+final pixels = SlimPixels();
 final output = pixels.transform(File('input.png').readAsBytesSync(), {
   'operations': [
     {'crop': {'x': 0, 'y': 0, 'width': 512, 'height': 512}},
@@ -41,7 +41,13 @@ final output = pixels.transform(File('input.png').readAsBytesSync(), {
 File('output.jpg').writeAsBytesSync(output);
 ```
 
-Windows에서는 `native/bin/windows-x64/`의 두 DLL을 같은 디렉터리에 둡니다. Linux에서는 빌드한 `.so` 파일들과 코덱 공유 라이브러리를 배치하고 해당 경로를 `LD_LIBRARY_PATH`에 지정합니다. 설치·실행 과정에서 바이너리를 자동으로 다운로드하지 않습니다. 상세 명령은 [CI.md](CI.md)에 있습니다.
+`SlimPixels()`는 번들에 포함된 라이브러리를 로드합니다. 네이티브 바이너리의 ABI 버전을 확인한 뒤 처리 함수를 사용합니다. 직접 관리하는 바이너리는 기존 `SlimPixels(libraryPath)`로 열 수 있으며 ABI 1을 제공해야 합니다.
+
+CLI 배포는 `dart build cli`를 사용하고 생성된 `bundle/` 전체를 옮기세요. build hook을 사용하는 패키지는 `dart compile exe`로 빌드할 수 없습니다. Dart 3.10의 `dart build cli`는 preview 명령입니다. Flutter 빌드·설치 결과물은 아직 검증하지 않았습니다.
+
+바이너리를 자동 다운로드하지 않습니다. 포함된 바이너리가 없으면 먼저 소스 빌드를 수행하세요. 별도 로컬 번들은 소비자 앱의 `pubspec.yaml`에서 `hooks.user_defines.slim_pixels.native_directory`로 지정할 수 있습니다. 해당 디렉터리에는 대상 플랫폼의 두 라이브러리와 `SHA256SUMS.json`이 있어야 합니다. 사용자 지정 번들의 해시는 무결성 확인이며 배포자 인증은 아닙니다.
+
+수동 로딩의 경우 Windows는 두 DLL을 같은 디렉터리에 두고 Linux는 코덱 검색 경로를 설정해야 합니다. 기본 번들 경로는 이러한 사용자 설정 없이 검증했습니다. 자세한 배포 조건과 남은 작업은 [배포 검증](docs/DISTRIBUTION.md)을 참고하세요.
 
 ## 요청 형식
 

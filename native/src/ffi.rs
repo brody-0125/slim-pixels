@@ -2,6 +2,12 @@
 use crate::{Request, process};
 use std::slice;
 
+/// ABI contract version, independent of the Dart package version.
+#[unsafe(no_mangle)]
+pub extern "C" fn slim_abi_version() -> u32 {
+    1
+}
+
 /// Buffers must be valid for their supplied lengths. Result is an owned boxed
 /// slice, including UTF-8 error text on failure; always call slim_free once.
 ///

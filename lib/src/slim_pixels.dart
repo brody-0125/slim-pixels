@@ -5,6 +5,9 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
+import 'codec_bindings.dart' as codec;
+import 'native_bindings.dart' as native;
+
 typedef _RunC =
     Int32 Function(
       Pointer<Uint8>,
@@ -31,9 +34,16 @@ typedef _Free = void Function(Pointer<Uint8>, int);
 /// Calls copy inputs and outputs. Run expensive work in a worker isolate.
 /// There is no persistent native image handle to dispose.
 final class SlimPixels {
-  /// Loads a native library and, on Windows x64, its adjacent TurboJPEG DLL.
+  /// Loads the bundled native assets, or an explicitly supplied library.
   /// The loaded libraries remain resident for the lifetime of this isolate.
-  SlimPixels(String libraryPath) {
+  SlimPixels([String? libraryPath]) {
+    if (libraryPath == null) {
+      codec.codecError(nullptr);
+      _checkAbi(native.abiVersion());
+      _run = native.run;
+      _free = native.free;
+      return;
+    }
     // Preload the adjacent dependency by absolute path; do not rely on PATH/CWD.
     if (Abi.current() == Abi.windowsX64) {
       final codec = File(
@@ -43,9 +53,19 @@ final class SlimPixels {
     }
     final library = DynamicLibrary.open(libraryPath);
     _libraries.add(library);
+    _checkAbi(
+      library.lookupFunction<Uint32 Function(), int Function()>(
+        'slim_abi_version',
+      )(),
+    );
     _run = library.lookupFunction<_RunC, _Run>('slim_run');
     _free = library.lookupFunction<_FreeC, _Free>('slim_free');
   }
+  static void _checkAbi(int version) {
+    if (version != 1)
+      throw StateError('Unsupported slim_pixels ABI: $version (expected 1)');
+  }
+
   late final _Run _run;
   final _libraries = <DynamicLibrary>[];
   late final _Free _free;

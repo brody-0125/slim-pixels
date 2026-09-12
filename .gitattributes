@@ -6,3 +6,4 @@
 *.dll binary
 *.so binary
 *.exe binary
+*.so.* binary

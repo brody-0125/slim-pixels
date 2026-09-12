@@ -43,3 +43,7 @@ quality_gate는 cargo 1.97.1, Python 3, GCC와 libturbojpeg.so.0가 필요하고
 강제 OOM, allocator 실패 주입, 강제 isolate 종료, 장시간 다중 isolate RSS, malformed corpus fuzzing, Rust panic 복구는 구현·검증되지 않았다. 소스 리뷰에서 확인한 늦은 사전 검증과 panic=abort 정책도 이번 자동화로 수정된 것은 아니다. Valgrind는 C ABI/native 경로를 검사하며 Dart VM의 전체 힙을 검사하지 않는다.
 
 원격 Actions 실행 결과와 로컬 검증은 구분한다. 이 작업 환경에는 원격 저장소가 연결돼 있지 않으므로 전체 원격 통과를 주장하지 않는다.
+
+## 소비자 배포 게이트
+
+모든 SDK/OS 작업은 `tool/distribution_check.py`로 경로 없는 로딩, 잘못된 해시 거부, 소스와 캐시를 삭제한 뒤 이동한 AOT 번들의 실행을 검사합니다. AOT는 `tool/aot_check.py`의 `dart build cli`를 사용합니다. 세부 조건과 미검증 범위는 `docs/DISTRIBUTION.md`에 있습니다.

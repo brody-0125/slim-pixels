@@ -18,3 +18,5 @@ out="$root/native/bin/linux-x64"
 mkdir -p "$out"
 cp "$root/native/target/release/libslim_pixels.so" "$out/"
 find "$build/install" -name 'libturbojpeg.so.0' -exec cp -L '{}' "$out/" \;
+
+python3 "$root/tool/native_manifest.py" "$out"

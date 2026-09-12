@@ -77,39 +77,33 @@ jobs:
         run: dart pub downgrade
       - run: dart analyze --fatal-infos
       - if: matrix.sdk == needs.matrix.outputs.latest
-        run: dart format --output=none --set-exit-if-changed lib test example tool/validation
+        run: dart format --output=none --set-exit-if-changed lib hook test example tool/validation
       - if: runner.os == 'Linux'
         run: |
           export LD_LIBRARY_PATH="$PWD/native/bin/linux-x64"
           dart run test/smoke.dart native/bin/linux-x64/libslim_pixels.so test/fixtures/rgb.png
-          mkdir -p build
-          dart compile exe test/smoke.dart -o build/smoke
-          ./build/smoke native/bin/linux-x64/libslim_pixels.so test/fixtures/rgb.png
+          python3 tool/aot_check.py test/smoke.dart native/bin/linux-x64/libslim_pixels.so test/fixtures/rgb.png
       - if: runner.os == 'Windows'
         shell: pwsh
         run: |
           dart run test/smoke.dart native/bin/windows-x64/slim_pixels.dll test/fixtures/rgb.png
           if ($LASTEXITCODE -ne 0) { throw 'JIT failed' }
-          New-Item -ItemType Directory -Force build | Out-Null
-          dart compile exe test/smoke.dart -o build/smoke.exe
-          if ($LASTEXITCODE -ne 0) { throw 'AOT compilation failed' }
-          ./build/smoke.exe native/bin/windows-x64/slim_pixels.dll test/fixtures/rgb.png
+          python tool/aot_check.py test/smoke.dart native/bin/windows-x64/slim_pixels.dll test/fixtures/rgb.png
           if ($LASTEXITCODE -ne 0) { throw 'AOT failed' }
       - if: matrix.sdk == needs.matrix.outputs.latest && runner.os == 'Linux'
         run: |
           export LD_LIBRARY_PATH="$PWD/native/bin/linux-x64"
           dart run tool/validation/golden_check.dart native/bin/linux-x64/libslim_pixels.so test/golden
-          dart compile exe tool/validation/golden_check.dart -o build/goldens
-          ./build/goldens native/bin/linux-x64/libslim_pixels.so test/golden
+          python3 tool/aot_check.py tool/validation/golden_check.dart native/bin/linux-x64/libslim_pixels.so test/golden
       - if: matrix.sdk == needs.matrix.outputs.latest && runner.os == 'Windows'
         shell: pwsh
         run: |
           dart run tool/validation/golden_check.dart native/bin/windows-x64/slim_pixels.dll test/golden
           if ($LASTEXITCODE -ne 0) { throw 'JIT goldens failed' }
-          dart compile exe tool/validation/golden_check.dart -o build/goldens.exe
-          if ($LASTEXITCODE -ne 0) { throw 'AOT goldens compilation failed' }
-          ./build/goldens.exe native/bin/windows-x64/slim_pixels.dll test/golden
+          python tool/aot_check.py tool/validation/golden_check.dart native/bin/windows-x64/slim_pixels.dll test/golden
           if ($LASTEXITCODE -ne 0) { throw 'AOT goldens failed' }
+      - name: Consumer installation and relocated bundle
+        run: python tool/distribution_check.py dart
   quality:
     needs: native
     runs-on: ubuntu-24.04
@@ -148,3 +142,24 @@ jobs:
           import json, os
           assert all(job['result'] == 'success' for job in json.loads(os.environ['RESULTS']).values())
           PY
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [required]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-ubuntu-24.04
+          path: native/bin/
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-windows-2022
+          path: native/bin/
+      - run: python3 tool/release_bundle.py "$GITHUB_REF_NAME"
+      - name: Create draft release from validated artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" build/release/* --verify-tag --draft --title "$GITHUB_REF_NAME" --notes "Native bundles validated by SDK compatibility CI. See CHANGELOG.md and bundled notices."

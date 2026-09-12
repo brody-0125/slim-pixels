@@ -46,3 +46,22 @@ The table covers Cargo resolved dependencies (including optional/target-specific
 | zune-core-0.4.12 | MIT OR Apache-2.0 OR Zlib | third_party/rust/zune-core-0.4.12/ |
 | zune-jpeg-0.4.21 | MIT OR Apache-2.0 OR Zlib | third_party/rust/zune-jpeg-0.4.21/ |
 | ffi 2.2.0 | BSD-3-Clause | third_party/dart/ffi/LICENSE |
+
+## Dart build and transitive dependencies
+
+These packages are resolved for the build hook and Dart package. This is not a claim that every dependency is included in the native binary.
+
+- code_assets 1.2.1: `third_party/dart/code_assets/LICENSE`
+- collection 1.19.1: `third_party/dart/collection/LICENSE`
+- crypto 3.0.7: `third_party/dart/crypto/LICENSE`
+- hooks 2.2.0: `third_party/dart/hooks/LICENSE`
+- logging 1.3.0: `third_party/dart/logging/LICENSE`
+- meta 1.19.0: `third_party/dart/meta/LICENSE`
+- path 1.9.1: `third_party/dart/path/LICENSE`
+- pub_semver 2.2.1: `third_party/dart/pub_semver/LICENSE`
+- record_use 1.1.1: `third_party/dart/record_use/LICENSE`
+- source_span 1.10.2: `third_party/dart/source_span/LICENSE`
+- string_scanner 1.4.1: `third_party/dart/string_scanner/LICENSE`
+- term_glyph 1.2.2: `third_party/dart/term_glyph/LICENSE`
+- typed_data 1.4.0: `third_party/dart/typed_data/LICENSE`
+- yaml 3.1.4: `third_party/dart/yaml/LICENSE`
