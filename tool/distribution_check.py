@@ -10,6 +10,9 @@ root = Path(__file__).resolve().parents[1]
 dart = shutil.which(sys.argv[1] if len(sys.argv) > 1 else 'dart')
 if not dart:
     raise SystemExit('Dart executable not found')
+# Native hook tools append .exe when the executable suffix is uppercase.
+if os.name == 'nt':
+    dart = str(Path(dart).with_suffix('.exe'))
 
 def run(args, cwd, env=None):
     subprocess.run(args, cwd=cwd, env=env, check=True)
@@ -32,7 +35,7 @@ with tempfile.TemporaryDirectory(prefix='slim consumer ') as temporary:
     (app / 'bin/main.dart').write_text("""
 import 'dart:io';
 import 'package:slim_pixels/slim_pixels.dart';
-void main() {
+Future<void> main() async {
   final result = SlimPixels().transformSync(File('input.png').readAsBytesSync(),
     encoding: JpegEncoding()).bytes;
   final expected = File('expected.jpg').readAsBytesSync();
@@ -40,7 +43,15 @@ void main() {
   for (var i = 0; i < result.length; i++) {
     if (result[i] != expected[i]) throw StateError('JPEG byte differs at $i');
   }
-  print('Bundled JPEG golden passed');
+  final worker = await SlimPixelsWorker.start();
+  try {
+    final asyncResult = await worker.transform(File('input.png').readAsBytesSync(), encoding: JpegEncoding());
+    if (asyncResult.byteLength != expected.length) throw StateError('Worker size differs');
+    for (var i = 0; i < expected.length; i++) {
+      if (asyncResult.bytes[i] != expected[i]) throw StateError('Worker byte differs');
+    }
+  } finally { await worker.close(); }
+  print('Bundled sync and worker JPEG goldens passed');
 }
 """, encoding='utf-8')
     run([dart, 'pub', 'get'], app)

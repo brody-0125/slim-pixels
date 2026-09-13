@@ -73,8 +73,6 @@ jobs:
         with:
           sdk: ${{ matrix.sdk }}
       - run: dart pub get --enforce-lockfile
-      - if: matrix.sdk == '3.10.0'
-        run: dart pub downgrade
       - run: dart analyze --fatal-infos
       - run: python tool/api_contract_check.py dart
       - if: matrix.sdk == needs.matrix.outputs.latest
@@ -93,6 +91,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'JIT failed' }
           python tool/aot_check.py test/smoke.dart native/bin/windows-x64/slim_pixels.dll test/fixtures/rgb.png
           if ($LASTEXITCODE -ne 0) { throw 'AOT failed' }
+      - name: Worker lifecycle and bounded queue (JIT/AOT)
+        shell: bash
+        run: |
+          dart run test/worker.dart
+          python tool/aot_check.py test/worker.dart
+          python tool/worker_fault_check.py dart
       - if: matrix.sdk == needs.matrix.outputs.latest && runner.os == 'Linux'
         run: |
           export LD_LIBRARY_PATH="$PWD/native/bin/linux-x64"
@@ -105,10 +109,55 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'JIT goldens failed' }
           python tool/aot_check.py tool/validation/golden_check.dart native/bin/windows-x64/slim_pixels.dll test/golden
           if ($LASTEXITCODE -ne 0) { throw 'AOT goldens failed' }
+      - if: matrix.sdk == needs.matrix.outputs.latest
+        name: Worker failure contracts (AOT)
+        run: python tool/worker_fault_check.py dart --aot
       - if: matrix.sdk == needs.matrix.outputs.latest && runner.os == 'Linux'
-        run: python3 tool/native_failure_check.py dart
+        name: Native failures and selected mutations
+        run: |
+          python3 tool/native_failure_check.py dart
+          python3 tool/native_failure_check.py dart --aot
+          python3 tool/worker_mutation_check.py dart
+      - if: matrix.sdk == needs.matrix.outputs.latest
+        name: Worker golden regression (JIT/AOT)
+        shell: bash
+        run: |
+          dart run tool/validation/golden_check.dart unused test/golden --worker
+          python tool/aot_check.py tool/validation/golden_check.dart unused test/golden --worker
       - name: Consumer installation and relocated bundle
         run: python tool/distribution_check.py dart
+  minimum:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-ubuntu-24.04
+          path: native/bin/
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.10.0'
+      - run: dart pub downgrade
+      - name: Record minimum dependency resolution
+        run: dart pub deps --json > minimum-dependencies.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimum-dependency-evidence
+          path: |
+            pubspec.lock
+            minimum-dependencies.json
+          if-no-files-found: error
+      - run: dart analyze --fatal-infos
+      - run: python3 tool/api_contract_check.py dart
+      - name: Minimum dependencies (JIT/AOT)
+        run: |
+          dart run test/smoke.dart unused test/fixtures/rgb.png
+          dart run test/worker.dart
+          python3 tool/aot_check.py test/smoke.dart unused test/fixtures/rgb.png
+          python3 tool/aot_check.py test/worker.dart
   quality:
     needs: native
     runs-on: ubuntu-24.04
@@ -136,7 +185,7 @@ jobs:
           retention-days: 14
   required:
     if: always()
-    needs: [matrix, native, dart, quality]
+    needs: [matrix, native, dart, minimum, quality]
     runs-on: ubuntu-24.04
     steps:
       - name: Require every SDK and platform to pass

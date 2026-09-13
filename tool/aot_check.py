@@ -14,7 +14,7 @@ if wrapper.exists():
 wrapper.parent.mkdir(exist_ok=True)
 try:
     wrapper.write_text("import '../" + source.as_posix() + "' as validation;\n"
-                       "void main(List<String> args) => validation.main(args);\n", encoding='utf-8')
+                       "Future<void> main(List<String> args) async { await Future<void>.sync(() => validation.main(args)); }\n", encoding='utf-8')
     output = root / 'build/aot' / source.stem
     subprocess.run(['dart', 'build', 'cli', '--target=bin/slim_validation.dart',
                     '--output=' + str(output)], cwd=root, check=True)

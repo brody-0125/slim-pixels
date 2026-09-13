@@ -51,3 +51,16 @@ quality_gate는 cargo 1.97.1, Python 3, GCC와 libturbojpeg.so.0가 필요하고
 ## 소비자 배포 게이트
 
 모든 SDK/OS 작업은 `tool/distribution_check.py`로 경로 없는 로딩, 잘못된 해시 거부, 소스와 캐시를 삭제한 뒤 이동한 AOT 번들의 실행을 검사합니다. AOT는 `tool/aot_check.py`의 `dart build cli`를 사용합니다. 세부 조건과 미검증 범위는 `docs/DISTRIBUTION.md`에 있습니다.
+
+## Worker 추가 게이트
+
+- 모든 SDK/플랫폼: worker lifecycle JIT/AOT, 비공개 프로토콜 장애 주입, 별도 소비자 worker JIT/AOT.
+- 최신 SDK/플랫폼: worker golden 322개 + 투명 JPEG 거부 12개 + JPEG 반복 1,000회, JIT/AOT.
+- 최신 Linux: 기존 네이티브 실패 6종을 sync와 worker에서 확인.
+- 시간 벤치마크는 참고 자료이며 호스티드 러너의 성능 통과 기준이 아닙니다.
+
+## Worker 계약 보강
+
+기존 모든 SDK/OS의 worker JIT/AOT에서 개수·바이트 한도를 독립 검증하고 queued snapshot·FIFO·혼합 오류 drain을 검사합니다. timeout 예약과 실패 후 제출은 임시 probe에서 제어된 명령 전달로 검증합니다. 최신 두 OS의 worker fault AOT와 최신 Linux native failure AOT를 추가했습니다.
+
+최신 Linux의 선정 결함 주입 게이트는 대조 코드 통과, 개수 제한 삭제 시 C1 실패, LIFO 변경 시 Q1 실패를 요구합니다. minimum 의존성은 Linux Dart 3.10.0 별도 필수 작업이며 모든 SDK의 locked 검사와 구분합니다.

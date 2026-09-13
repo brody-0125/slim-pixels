@@ -1,12 +1,14 @@
-/// Bounded synchronous image transforms with Dart-owned encoded results.
+/// Bounded synchronous and worker image transforms with Dart-owned encoded results.
 ///
 /// Use [SlimPixels.transformSync] with typed operations and encoding options.
-/// Native assets support Windows and Linux x64. Run costly work in an isolate.
+/// Use [SlimPixelsWorker] for a reusable asynchronous worker.
+/// Native assets support Windows and Linux x64.
 library;
 
 export 'src/slim_pixels.dart'
     show
         SlimPixels,
+        SlimPixelsWorker,
         ImageOperation,
         Resize,
         Crop,

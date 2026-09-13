@@ -265,7 +265,7 @@ final class ImageResult {
   int get byteLength => bytes.lengthInBytes;
 }
 
-/// A known native initialization or processing failure.
+/// A known initialization, processing or worker failure.
 final class SlimPixelsException implements Exception {
   SlimPixelsException._(this.code, {this.operationIndex});
 
@@ -287,6 +287,17 @@ final class SlimPixelsErrorCode {
 
   /// The stable category identifier.
   final String name;
+
+  /// The worker isolate could not be started.
+  static const workerStartFailed = SlimPixelsErrorCode._('workerStartFailed');
+
+  /// The active and queued inputs exceed the worker capacity.
+  static const workerCapacityExceeded = SlimPixelsErrorCode._(
+    'workerCapacityExceeded',
+  );
+
+  /// The worker terminated before completing its accepted work.
+  static const workerTerminated = SlimPixelsErrorCode._('workerTerminated');
 
   /// Native assets could not be loaded.
   static const nativeUnavailable = SlimPixelsErrorCode._('nativeUnavailable');

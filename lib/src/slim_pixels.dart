@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
@@ -6,6 +9,7 @@ import 'codec_bindings.dart' as codec;
 import 'native_bindings.dart' as native;
 
 part 'types.dart';
+part 'worker.dart';
 
 /// Synchronous image processing with isolate-local native initialization.
 ///
@@ -57,20 +61,7 @@ final class SlimPixels {
     List<ImageOperation> operations = const [],
     required ImageEncoding encoding,
   }) {
-    if (input.isEmpty || input.length > 256 * 1024 * 1024) {
-      throw ArgumentError.value(
-        input.length,
-        'input.length',
-        'Must be 1..268435456 bytes.',
-      );
-    }
-    if (operations.length > 64) {
-      throw ArgumentError.value(
-        operations.length,
-        'operations.length',
-        'Must not exceed 64.',
-      );
-    }
+    _validateRequest(input, operations);
     final plan = utf8.encode(
       jsonEncode({
         'operations': operations.map((op) => op._json).toList(),
@@ -152,3 +143,20 @@ SlimPixelsErrorCode _statusCode(int status) => switch (status) {
   10 => SlimPixelsErrorCode.encodeFailed,
   _ => SlimPixelsErrorCode.internalFailure,
 };
+
+void _validateRequest(Uint8List input, List<ImageOperation> operations) {
+  if (input.isEmpty || input.length > 256 * 1024 * 1024) {
+    throw ArgumentError.value(
+      input.length,
+      'input.length',
+      'Must be 1..268435456 bytes.',
+    );
+  }
+  if (operations.length > 64) {
+    throw ArgumentError.value(
+      operations.length,
+      'operations.length',
+      'Must not exceed 64.',
+    );
+  }
+}

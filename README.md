@@ -9,7 +9,7 @@ Dart에서 이미지의 크기와 형태를 변환하고 PNG, JPEG, 무손실 We
 - 작업: exact/inside/cover resize, crop, 90도 단위 회전, 좌우·상하 반전.
 - 출력: JPEG, PNG, 무손실 WebP.
 
-호출은 동기식입니다. 큰 이미지는 worker isolate에서 처리하고 그 안에서 `SlimPixels()`를 생성하세요. 파일 I/O와 배치 동시성은 호출자가 관리합니다. Flutter 설치 결과물·모바일·macOS·ARM은 검증하지 않았습니다.
+동기 호출은 `SlimPixels.transformSync`, 재사용하는 비동기 호출은 `SlimPixelsWorker.transform`으로 제공합니다. 파일 I/O와 배치 동시성은 호출자가 관리합니다. Flutter 설치 결과물·모바일·macOS·ARM은 검증하지 않았습니다.
 
 ## 사용
 
@@ -37,7 +37,34 @@ void main() {
 }
 ```
 
-`encoding`은 필수입니다. 작업 목록을 생략해도 이미지를 다시 디코딩하고 인코딩합니다. 원본 바이트나 메타데이터를 보존하는 기능이 아닙니다. 결과 바이트를 수정하려면 `Uint8List.fromList(result.bytes)`로 복사하세요. `dispose`는 필요하지 않습니다.
+`encoding`은 필수입니다. 작업 목록을 생략해도 이미지를 다시 디코딩하고 인코딩합니다. 원본 바이트나 메타데이터를 보존하는 기능이 아닙니다. 결과 바이트를 수정하려면 `Uint8List.fromList(result.bytes)`로 복사하세요. `SlimPixels`에는 `dispose`가 필요하지 않습니다. worker는 사용 후 `close()`를 호출하세요.
+
+## 재사용하는 비동기 worker
+
+```dart
+import 'dart:io';
+import 'package:slim_pixels/slim_pixels.dart';
+
+Future<void> main() async {
+  final worker = await SlimPixelsWorker.start();
+  try {
+    final result = await worker.transform(
+      await File('input.png').readAsBytes(),
+      operations: [Resize.inside(maxWidth: 512)],
+      encoding: JpegEncoding(quality: 90),
+    );
+    await File('output.jpg').writeAsBytes(result.bytes);
+  } finally {
+    await worker.close();
+  }
+}
+```
+
+worker 하나는 isolate 하나에서 순서대로 처리합니다. 기본 한도는 실행 중인 요청을 포함해 4개, 입력 합계 256 MiB이며 `start(maxPendingRequests:, maxPendingInputBytes:)`로 조정합니다. 초과 요청은 복사·대기열 등록 전에 `workerCapacityExceeded`로 실패합니다. 큰 배치는 각 결과를 await하거나 호출자가 제한된 수만 제출하세요.
+
+`transform`이 반환되기 전에 입력과 작업 목록을 스냅샷하므로 이후 원본을 수정할 수 있습니다. 복사 비용이 있어 호출 자체가 무비용인 것은 아닙니다. 결과는 읽기 전용이며 zero-copy를 보장하지 않습니다. 한도는 전체 RSS나 호출자가 보관하는 결과의 합계를 제한하지 않습니다.
+
+`close()`는 신규 요청을 차단하고 수락한 요청을 모두 처리한 뒤 종료합니다. 반복 호출할 수 있습니다. 이후 `transform`은 Future의 `StateError`로 실패합니다. 일반 이미지 오류 후에는 재사용할 수 있지만 예기치 않은 worker 종료는 대기 작업을 `workerTerminated`로 실패시키며 자동 재시도하지 않습니다. `Future.timeout`은 처리 취소가 아니며 네이티브 호출이 멈추면 `close()`도 지연될 수 있습니다.
 
 ## 크기와 인코딩 정책
 

@@ -11,6 +11,7 @@ if sys.platform != 'linux':
     raise SystemExit('Run on Linux with gcc and a Dart SDK')
 root = Path(__file__).resolve().parents[1]
 dart = sys.argv[1] if len(sys.argv) > 1 else 'dart'
+aot = '--aot' in sys.argv[2:]
 common = """#include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -45,9 +46,10 @@ with tempfile.TemporaryDirectory(prefix='slim-fault-') as temp:
     app = workspace / 'app'
     app.mkdir()
     (app / 'pubspec.yaml').write_text("name: fault_consumer\nenvironment:\n  sdk: '>=3.10.0 <4.0.0'\ndependencies:\n  slim_pixels:\n    path: ../package\n")
-    (app / 'main.dart').write_text("""import 'dart:typed_data';
+    (app / 'bin').mkdir()
+    (app / 'bin/main.dart').write_text("""import 'dart:typed_data';
 import 'package:slim_pixels/slim_pixels.dart';
-void main(List<String> args) {
+Future<void> main(List<String> args) async {
   for (var i = 0; i < 2; i++) {
     try {
       SlimPixels().transformSync(Uint8List.fromList([1]), encoding: const PngEncoding());
@@ -58,7 +60,31 @@ void main(List<String> args) {
       }
     }
   }
-  print('PASS: ${args.single}');
+  final startupFailure = ['nativeUnavailable', 'incompatibleNative'].contains(args.single);
+  if (startupFailure) {
+    for (var i = 0; i < 2; i++) {
+      SlimPixelsWorker? unexpected;
+      try {
+        unexpected = await SlimPixelsWorker.start();
+        throw StateError('Expected failure during start');
+      } on SlimPixelsException catch (e) {
+        if (e.code.name != args.single || e.operationIndex != null) rethrow;
+      } finally { await unexpected?.close(); }
+    }
+  } else {
+    final worker = await SlimPixelsWorker.start();
+    try {
+      for (var i = 0; i < 2; i++) {
+        try {
+          await worker.transform(Uint8List.fromList([1]), encoding: const PngEncoding());
+          throw StateError('Expected failure during transform');
+        } on SlimPixelsException catch (e) {
+          if (e.code.name != args.single || e.operationIndex != null) rethrow;
+        }
+      }
+    } finally { await worker.close(); }
+  }
+  print('PASS: sync and worker ${args.single}');
 }
 """)
     subprocess.run([dart, 'pub', 'get'], cwd=app, check=True)
@@ -73,6 +99,10 @@ void main(List<String> args) {
         hashes = {name: hashlib.sha256((bundle / name).read_bytes()).hexdigest()
                   for name in ['libslim_pixels.so', 'libturbojpeg.so.0']}
         (bundle / 'SHA256SUMS.json').write_text(json.dumps(hashes))
-        subprocess.run([dart, 'run', 'main.dart', expected], cwd=app, check=True)
+        if aot:
+            subprocess.run([dart, 'build', 'cli', '--target=bin/main.dart', '--output=dist-' + label], cwd=app, check=True, timeout=180)
+            subprocess.run([str(app / ('dist-' + label) / 'bundle/bin/main'), expected], cwd=app, check=True, timeout=120)
+        else:
+            subprocess.run([dart, 'run', 'bin/main.dart', expected], cwd=app, check=True, timeout=120)
         print('Verified ' + label, flush=True)
 print('PASS: six isolated native failure scenarios; malformed-result buffer released')

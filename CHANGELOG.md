@@ -2,6 +2,8 @@
 
 ## Unreleased — 0.1.2
 
+- 단일 isolate와 제한된 FIFO 큐를 가진 SlimPixelsWorker를 추가했습니다. 입력 스냅샷, drain 후 close, 용량 초과·비정상 종료 오류를 제공합니다.
+
 - **Breaking:** Map 기반 transform과 런타임 라이브러리 경로 생성자를 제거하고 transformSync, 타입이 있는 작업·포맷별 옵션·읽기 전용 ImageResult를 도입했습니다.
 - exact/inside/cover 크기 정책, 소수 좌표 중앙 crop, 확대 금지와 작업별 오류 위치를 추가했습니다.
 - ABI 2로 출력 크기·포맷·구조화된 오류 코드를 전달합니다. 예전 바이너리는 새 공개 API와 호환되지 않습니다.

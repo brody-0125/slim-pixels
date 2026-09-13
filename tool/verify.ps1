@@ -10,4 +10,6 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'Dart analysis failed' }
   & $Dart run test/smoke.dart native/bin/windows-x64/slim_pixels.dll test/fixtures/rgb.png
   if ($LASTEXITCODE -ne 0) { throw 'FFI smoke test failed' }
+  & $Dart run test/worker.dart
+  if ($LASTEXITCODE -ne 0) { throw "Worker validation failed" }
 } finally { Pop-Location }

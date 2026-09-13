@@ -16,6 +16,7 @@ ImageResult transformSync(
 
 | 타입 | 공개 구성 |
 |---|---|
+| SlimPixelsWorker | start(maxPendingRequests: 4, maxPendingInputBytes: 268435456), transform(input, operations:, required encoding:), close() |
 | ImageOperation | abstract final. 외부 구현/상속 금지 |
 | Resize | exact/cover(width, height), inside(maxWidth?, maxHeight?). 모두 named parameter. filter, allowUpscale 옵션; 읽기 속성 filter, allowsUpscale |
 | Crop | named x/y/width/height와 동일한 읽기 속성 |
@@ -44,6 +45,9 @@ crop의 영역은 [x,x+width)×[y,y+height)입니다. 자동 clamp하지 않습�
 
 | code | 의미 |
 |---|---|
+| workerStartFailed | isolate 생성 인프라 실패 |
+| workerCapacityExceeded | 실행 중 + 대기 입력 개수/바이트 한도 초과 |
+| workerTerminated | 예기치 않은 worker 오류 또는 종료 |
 | nativeUnavailable | 런타임 로딩 또는 심볼 해석 실패 |
 | incompatibleNative | ABI 불일치 |
 | unsupportedInput | 지원하지 않는 컨테이너 |
@@ -76,3 +80,11 @@ operationIndex는 사용자 작업 목록의 0-based 위치이며 그 외 단계
 - 투명 JPEG 12개 기존 회귀 사례는 성공 출력 대신 transparencyUnsupported를 검사합니다. 기존 golden 이미지는 변경하지 않았습니다.
 
 현재 자동 검증 범위와 미검증 실패 주입은 [검증 기록](VALIDATION.md)을 확인하세요. 타입 계약만으로 메모리 고갈·모든 코덱 결함의 복구를 보장하지 않습니다.
+
+## Worker 수명과 소유권
+
+`await SlimPixelsWorker.start()`는 worker 안의 네이티브 초기화까지 기다립니다. 동기 API와 동일한 타입·변환·오류 코드를 사용하며 ABI는 2로 유지됩니다. 초기화 실패의 nativeUnavailable/incompatibleNative는 그대로 전달합니다. build hook 실패는 비동기 예외가 아닌 빌드 오류입니다.
+
+transform은 호출 중 입력을 TransferableTypedData로 복사하고 작업 목록을 별도로 복사합니다. 오류는 반환 Future로 전달합니다. 타입 값 생성자의 ArgumentError는 생성 시 발생합니다. 인자 검증은 동기 API와 공유합니다. 한도는 실행 중과 대기 중 입력에 적용하며 결과 보관량이나 디코딩 버퍼까지 합친 메모리 상한이 아닙니다.
+
+close는 즉시 신규 제출을 막고 FIFO를 비운 후 isolate 종료를 기다립니다. 여러 close는 동일 Future를 반환합니다. 종료 중/종료 후 제출은 StateError, 종료 전 실패 상태의 제출은 workerTerminated입니다. 일반 SlimPixelsException은 해당 요청만 실패시킵니다. 비정상 종료는 모든 대기 Future를 완료하고 예약량을 해제합니다. 자동 재시도·pool·cancel·우선순위는 제공하지 않습니다. OS 네이티브 라이브러리 unload나 native crash 격리는 보장하지 않습니다.

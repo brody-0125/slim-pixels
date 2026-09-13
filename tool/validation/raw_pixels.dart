@@ -54,7 +54,9 @@ final class RawPixels {
   }
   static void _checkAbi(int version) {
     if (version != 1 && version != 2) {
-      throw StateError('Unsupported slim_pixels ABI: $version (expected 1 or 2)');
+      throw StateError(
+        'Unsupported slim_pixels ABI: $version (expected 1 or 2)',
+      );
     }
   }
 

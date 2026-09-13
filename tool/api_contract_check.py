@@ -17,6 +17,11 @@ import 'package:slim_pixels/slim_pixels.dart';
 ImageResult convert(Uint8List input) => SlimPixels().transformSync(input,
     operations: [Resize.cover(width: 2, height: 3), Rotate.clockwise90],
     encoding: const PngEncoding());
+Future<ImageResult> convertAsync(Uint8List input) async {
+  final worker = await SlimPixelsWorker.start(maxPendingRequests: 2);
+  try { return await worker.transform(input, encoding: const PngEncoding()); }
+  finally { await worker.close(); }
+}
 String name(ImageFormat format) => switch (format) {
   ImageFormat.png => 'png', _ => 'other',
 };

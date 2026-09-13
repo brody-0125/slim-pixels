@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:slim_pixels/slim_pixels.dart';
 
-ImageResult transformFixture(
-  SlimPixels client,
+FutureOr<ImageResult> dispatchFixture(
+  Object client,
   Uint8List input,
   Map<String, Object?> request,
 ) {
@@ -44,9 +45,18 @@ ImageResult transformFixture(
     'webp' => const WebpLosslessEncoding(),
     _ => throw StateError('Unknown fixture encoding'),
   };
-  return client.transformSync(
+  if (client is SlimPixelsWorker) {
+    return client.transform(input, operations: operations, encoding: encoding);
+  }
+  return (client as SlimPixels).transformSync(
     input,
     operations: operations,
     encoding: encoding,
   );
 }
+
+ImageResult transformFixture(
+  SlimPixels client,
+  Uint8List input,
+  Map<String, Object?> request,
+) => dispatchFixture(client, input, request) as ImageResult;

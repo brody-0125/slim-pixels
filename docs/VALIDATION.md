@@ -32,3 +32,17 @@ These are local results from 2026-09-13, not GitHub Actions run results.
 - actionlint 1.7.12 and the SDK matrix discovery tests passed.
 
 The original raw logs remain in the archived Codex deliverables; generated logs are not source-controlled here. Future CI uploads evidence as workflow artifacts. See [CI.md](../CI.md) and [GATES.md](../GATES.md) for reproducible procedures and exclusions. The remote 48 SDK/OS combination matrix has not yet been executed.
+
+## Worker 통합 검증 (2026-09-13)
+
+Windows/Linux x64의 Dart 3.10.0과 3.13.3에서 worker lifecycle JIT/AOT를 로컬 실행했습니다. 최신 SDK 양 플랫폼에서 worker의 322개 golden 바이트 일치, 12개 정책 거부, 1,000 JPEG 반복을 검사했습니다. Linux 네이티브 실패 6종은 worker 초기화/처리까지 확장했습니다. 소비자 JIT와 이동한 AOT 번들에서 worker의 네이티브 자산 로딩과 JPEG 바이트 일치를 확인했습니다.
+
+강제 오류와 조기 종료는 임시 패키지의 비공개 포트로 주입합니다. 20회 반복 오류에서 수락한 Future 전부의 실패와 예약 해제, 늦은 응답 무시를 확인합니다. 이는 네이티브 프로세스 crash 복구나 RSS 누수 부재를 보장하는 검사는 아닙니다. 전체 SDK 패치 매트릭스는 CI에 연결했으며 원격 CI 실행 완료를 뜻하지 않습니다.
+
+## 테스트 회귀 감지 보강 (2026-09-13)
+
+이전 검사에서는 요청 개수 제한 삭제와 FIFO→LIFO 변경이 통과했습니다. 보강 후 정상 대조 코드는 통과하고 두 변형은 각각 C1/Q1의 지정된 단언으로 실패합니다. 이는 선정한 두 회귀에 대한 검출 확인이며 전체 mutation coverage를 뜻하지 않습니다.
+
+Windows/Linux Dart 3.10.0·3.13.3 worker lifecycle JIT/AOT와 최신 두 OS worker fault JIT/AOT를 로컬 실행했습니다. Linux 네이티브 장애 6종도 JIT/AOT에서 시작/처리 단계와 오류 코드를 함께 확인했습니다. Linux Dart 3.10.0은 locked 실행과 별도의 downgrade 후 분석/API/smoke/worker JIT/AOT 실행을 구분했습니다.
+
+CI에는 모든 SDK의 locked 검사, 독립 minimum 의존성 필수 작업, 최신 SDK 장애 AOT 및 선정 결함 주입 게이트를 연결했습니다. 원격 CI 전체 수행을 뜻하지 않습니다. 메모리 장기 추세 및 native hang/crash 검사는 이번 범위에 포함하지 않습니다.

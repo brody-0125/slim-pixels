@@ -28,3 +28,7 @@ tool/api_contract_check.py
 tool/native_failure_check.py
 
 tool/docs_check.py
+
+tool/worker_fault_check.py
+
+tool/worker_mutation_check.py
