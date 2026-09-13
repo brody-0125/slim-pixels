@@ -1,86 +1,86 @@
 import 'dart:convert';
 import 'dart:ffi';
-import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:ffi/ffi.dart';
-
 import 'codec_bindings.dart' as codec;
 import 'native_bindings.dart' as native;
 
-typedef _RunC =
-    Int32 Function(
-      Pointer<Uint8>,
-      UintPtr,
-      Pointer<Uint8>,
-      UintPtr,
-      Pointer<Pointer<Uint8>>,
-      Pointer<UintPtr>,
-    );
-typedef _Run =
-    int Function(
-      Pointer<Uint8>,
-      int,
-      Pointer<Uint8>,
-      int,
-      Pointer<Pointer<Uint8>>,
-      Pointer<UintPtr>,
-    );
-typedef _FreeC = Void Function(Pointer<Uint8>, UintPtr);
-typedef _Free = void Function(Pointer<Uint8>, int);
+part 'types.dart';
 
-/// Synchronous image transforms backed by the slim_pixels native library.
+/// Synchronous image processing with isolate-local native initialization.
 ///
-/// Calls copy inputs and outputs. Run expensive work in a worker isolate.
-/// There is no persistent native image handle to dispose.
+/// No persistent image handles are exposed; no dispose call is needed.
 final class SlimPixels {
-  /// Loads the bundled native assets, or an explicitly supplied library.
-  /// The loaded libraries remain resident for the lifetime of this isolate.
-  SlimPixels([String? libraryPath]) {
-    if (libraryPath == null) {
-      codec.codecError(nullptr);
-      _checkAbi(native.abiVersion());
-      _run = native.run;
-      _free = native.free;
-      return;
-    }
-    // Preload the adjacent dependency by absolute path; do not rely on PATH/CWD.
-    if (Abi.current() == Abi.windowsX64) {
-      final codec = File(
-        '${File(libraryPath).absolute.parent.path}${Platform.pathSeparator}turbojpeg.dll',
-      );
-      if (codec.existsSync()) _libraries.add(DynamicLibrary.open(codec.path));
-    }
-    final library = DynamicLibrary.open(libraryPath);
-    _libraries.add(library);
-    _checkAbi(
-      library.lookupFunction<Uint32 Function(), int Function()>(
-        'slim_abi_version',
-      )(),
-    );
-    _run = library.lookupFunction<_RunC, _Run>('slim_run');
-    _free = library.lookupFunction<_FreeC, _Free>('slim_free');
-  }
-  static void _checkAbi(int version) {
-    if (version != 1)
-      throw StateError('Unsupported slim_pixels ABI: $version (expected 1)');
-  }
-
-  late final _Run _run;
-  final _libraries = <DynamicLibrary>[];
-  late final _Free _free;
-
-  /// Applies the JSON request contract documented in README.
+  /// Prepares bundled native assets and checks ABI compatibility.
   ///
-  /// Returns Dart-owned encoded bytes. Throws [ArgumentError] for invalid input
-  /// size and [StateError] for native validation or codec errors.
-  Uint8List transform(Uint8List input, Map<String, Object?> request) {
-    if (input.isEmpty || input.length > 256 * 1024 * 1024) {
-      throw ArgumentError('Input must be 1..256 MiB');
+  /// Throws [SlimPixelsException] for known runtime loading or ABI failures.
+  /// Build-hook failures occur before this constructor and remain build errors.
+  SlimPixels() {
+    if (_initialized) return;
+    final int version;
+    try {
+      codec.codecError(nullptr);
+      version = native.abiVersion();
+      if (version == 2) {
+        Native.addressOf<NativeFunction<native.TransformNative>>(native.run);
+        Native.addressOf<
+          NativeFunction<Void Function(Pointer<Uint8>, UintPtr)>
+        >(native.free);
+      }
+      // The SDK reports loader failures as ArgumentError. Restrict conversion
+      // to these native resolution calls, never the processing/validation path.
+      // ignore: avoid_catching_errors
+    } on ArgumentError catch (_, stack) {
+      Error.throwWithStackTrace(
+        SlimPixelsException._(SlimPixelsErrorCode.nativeUnavailable),
+        stack,
+      );
     }
-    final plan = utf8.encode(jsonEncode(request));
+    if (version != 2) {
+      throw SlimPixelsException._(SlimPixelsErrorCode.incompatibleNative);
+    }
+    _initialized = true;
+  }
+  static bool _initialized = false;
+
+  /// Decodes [input], applies [operations] in order, and encodes the result.
+  ///
+  /// Input is read during the call, never mutated or retained. The result owns
+  /// read-only Dart bytes. Even an empty operation list decodes and re-encodes.
+  /// Supports static PNG/JPEG/WebP decoded as RGB8/RGBA8, without EXIF orientation
+  /// or metadata preservation. Run costly calls in a worker isolate.
+  ///
+  /// Throws [ArgumentError] for empty input, input over 256 MiB, or more than
+  /// 64 operations. Known execution failures throw [SlimPixelsException].
+  ImageResult transformSync(
+    Uint8List input, {
+    List<ImageOperation> operations = const [],
+    required ImageEncoding encoding,
+  }) {
+    if (input.isEmpty || input.length > 256 * 1024 * 1024) {
+      throw ArgumentError.value(
+        input.length,
+        'input.length',
+        'Must be 1..268435456 bytes.',
+      );
+    }
+    if (operations.length > 64) {
+      throw ArgumentError.value(
+        operations.length,
+        'operations.length',
+        'Must not exceed 64.',
+      );
+    }
+    final plan = utf8.encode(
+      jsonEncode({
+        'operations': operations.map((op) => op._json).toList(),
+        'format': encoding._format.name,
+        'quality': encoding._quality,
+      }),
+    );
+    // Typed requests have bounded size; a protocol overflow indicates a bug.
     if (plan.length > 65536) {
-      throw ArgumentError('Request JSON must be at most 64 KiB');
+      throw SlimPixelsException._(SlimPixelsErrorCode.internalFailure);
     }
     return using((arena) {
       final source = arena<Uint8>(input.length)
@@ -89,19 +89,66 @@ final class SlimPixels {
         ..asTypedList(plan.length).setAll(0, plan);
       final out = arena<Pointer<Uint8>>();
       final length = arena<UintPtr>();
-      final code = _run(source, input.length, config, plan.length, out, length);
+      final width = arena<Uint32>();
+      final height = arena<Uint32>();
+      final format = arena<Uint32>();
+      final operation = arena<Int32>();
+      out.value = nullptr;
+      length.value = 0;
       try {
-        if (code != 0) {
-          throw StateError(
-            out.value == nullptr
-                ? 'Invalid native request'
-                : utf8.decode(out.value.asTypedList(length.value)),
+        final status = native.run(
+          source,
+          input.length,
+          config,
+          plan.length,
+          out,
+          length,
+          width,
+          height,
+          format,
+          operation,
+        );
+        if (status != 0) {
+          final index = operation.value;
+          if (index < -1 || index >= operations.length) {
+            throw SlimPixelsException._(SlimPixelsErrorCode.internalFailure);
+          }
+          throw SlimPixelsException._(
+            _statusCode(status),
+            operationIndex: index < 0 ? null : index,
           );
         }
-        return Uint8List.fromList(out.value.asTypedList(length.value));
+        if (out.value == nullptr ||
+            length.value == 0 ||
+            length.value > 256 * 1024 * 1024 ||
+            width.value == 0 ||
+            height.value == 0 ||
+            width.value * height.value > 32000000 ||
+            format.value != encoding._format._id) {
+          throw SlimPixelsException._(SlimPixelsErrorCode.internalFailure);
+        }
+        return ImageResult._(
+          Uint8List.fromList(out.value.asTypedList(length.value)),
+          width.value,
+          height.value,
+          encoding._format,
+        );
       } finally {
-        _free(out.value, length.value);
+        native.free(out.value, length.value);
       }
     });
   }
 }
+
+SlimPixelsErrorCode _statusCode(int status) => switch (status) {
+  2 => SlimPixelsErrorCode.unsupportedInput,
+  3 => SlimPixelsErrorCode.animatedInputUnsupported,
+  4 => SlimPixelsErrorCode.unsupportedPixelFormat,
+  5 => SlimPixelsErrorCode.decodeFailed,
+  6 => SlimPixelsErrorCode.cropOutOfBounds,
+  7 => SlimPixelsErrorCode.upscaleRequired,
+  8 => SlimPixelsErrorCode.resourceLimitExceeded,
+  9 => SlimPixelsErrorCode.transparencyUnsupported,
+  10 => SlimPixelsErrorCode.encodeFailed,
+  _ => SlimPixelsErrorCode.internalFailure,
+};

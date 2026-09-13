@@ -7,5 +7,5 @@ mod ffi;
 ))]
 mod jpeg;
 mod pipeline;
-pub use ffi::{slim_free, slim_run};
+pub use ffi::{slim_free, slim_run, slim_transform};
 pub use pipeline::{Op, Request, process};

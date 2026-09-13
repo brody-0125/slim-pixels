@@ -1,110 +1,183 @@
 import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:slim_pixels/slim_pixels.dart';
 
+void check(bool value, String message) {
+  if (!value) throw StateError(message);
+}
+
 void main(List<String> args) {
-  final slim = SlimPixels(args[0]);
+  // The first argument remains reserved for existing CI command compatibility.
+  final slim = SlimPixels();
   final input = File(args[1]).readAsBytesSync();
-  final jpeg = slim.transform(input, {
-    'operations': [],
-    'format': 'jpeg',
-    'quality': 90,
-  });
+  final jpeg = slim.transformSync(input, encoding: JpegEncoding());
   final golden = File(
     '${File(args[1]).parent.path}/rgb-q90.jpg',
   ).readAsBytesSync();
-  if (jpeg.length != golden.length)
-    throw StateError('JPEG golden size differs');
-  for (var i = 0; i < jpeg.length; i++) {
-    if (jpeg[i] != golden[i]) throw StateError('JPEG golden bytes differ');
+  check(jpeg.byteLength == golden.length, 'JPEG size');
+  for (var i = 0; i < golden.length; i++) {
+    check(jpeg.bytes[i] == golden[i], 'JPEG byte $i');
   }
-  var boundaryFailures = 0;
-  try {
-    slim.transform(Uint8List(0), {});
-  } on ArgumentError {
-    boundaryFailures++;
-  }
-  try {
-    slim.transform(input, {'padding': 'x' * 65537});
-  } on ArgumentError {
-    boundaryFailures++;
-  }
-  if (boundaryFailures != 2) {
-    throw StateError('Dart input/request boundary validation failed');
-  }
-  final invalid = <Map<String, Object?>>[
-    {
-      'operations': [
-        {
-          'resize': {'width': 0, 'height': 4, 'filter': 'lanczos3'},
-        },
-      ],
-      'format': 'png',
-      'quality': 90,
+  var rejected = 0;
+  for (final call in <void Function()>[
+    () {
+      JpegEncoding(quality: 0);
     },
-    {
-      'operations': [
-        {
-          'crop': {'x': 999999, 'y': 0, 'width': 2, 'height': 2},
-        },
-      ],
-      'format': 'png',
-      'quality': 90,
+    () {
+      JpegEncoding(quality: 101);
     },
-    {
-      'operations': [
-        {
-          'resize': {'width': 4, 'height': 4, 'filter': 'unknown'},
-        },
-      ],
-      'format': 'png',
-      'quality': 90,
+    () {
+      Resize.inside();
     },
-    {'operations': [], 'format': 'jpeg', 'quality': 0},
-    {
-      'operations': ['unknown'],
-      'format': 'png',
-      'quality': 90,
+    () {
+      Resize.exact(width: 0, height: 1);
     },
-  ];
-  var failures = 0;
-  for (final req in invalid) {
+    () {
+      Crop(x: -1, y: 0, width: 1, height: 1);
+    },
+    () {
+      slim.transformSync(Uint8List(0), encoding: const PngEncoding());
+    },
+    () {
+      slim.transformSync(
+        input,
+        operations: List.filled(65, Flip.horizontal),
+        encoding: const PngEncoding(),
+      );
+    },
+  ]) {
     try {
-      slim.transform(input, req);
-    } on StateError {
-      failures++;
+      call();
+    } on ArgumentError {
+      rejected++;
     }
   }
-  if (failures != invalid.length)
-    throw StateError('Expected ${invalid.length} failures, got $failures');
-  final plan = <String, Object?>{
-    'operations': [
-      {
-        'crop': {'x': 1, 'y': 2, 'width': 12, 'height': 10},
-      },
-      {
-        'resize': {'width': 6, 'height': 5, 'filter': 'lanczos3'},
-      },
-      'rotate90',
-      'flip_horizontal',
-    ],
-    'format': 'png',
-    'quality': 90,
-  };
-  final a = slim.transform(input, plan),
-      b = slim.transform(input, {...plan, 'scalar': true});
-  if (a.length != b.length) throw StateError('SIMD/scalar length mismatch');
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) throw StateError('SIMD/scalar output mismatch');
+  check(rejected == 7, 'Argument boundaries');
+  void fails(
+    List<ImageOperation> operations,
+    SlimPixelsErrorCode code,
+    int index,
+  ) {
+    try {
+      slim.transformSync(
+        input,
+        operations: operations,
+        encoding: const PngEncoding(),
+      );
+      throw StateError('Expected ${code.name}');
+    } on SlimPixelsException catch (e) {
+      check(e.code == code && e.operationIndex == index, 'Failure code/index');
+    }
   }
-  final header = ByteData.sublistView(a);
-  if (header.getUint32(16) != 5 || header.getUint32(20) != 6)
-    throw StateError('Pipeline dimensions differ');
+
+  fails(
+    [Crop(x: 999999, y: 0, width: 1, height: 1)],
+    SlimPixelsErrorCode.cropOutOfBounds,
+    0,
+  );
+  fails(
+    [Resize.cover(width: 100, height: 100, allowUpscale: false)],
+    SlimPixelsErrorCode.upscaleRequired,
+    0,
+  );
+  fails(
+    [
+      Crop(x: 0, y: 0, width: 1, height: 1),
+      Resize.exact(width: 2, height: 2, allowUpscale: false),
+    ],
+    SlimPixelsErrorCode.upscaleRequired,
+    1,
+  );
+  final plan = <ImageOperation>[
+    Crop(x: 1, y: 2, width: 12, height: 10),
+    Resize.exact(width: 6, height: 5),
+    Rotate.clockwise90,
+    Flip.horizontal,
+  ];
+  final result = slim.transformSync(
+    input,
+    operations: plan,
+    encoding: const PngEncoding(),
+  );
+  check(result.width == 5 && result.height == 6, 'Metadata dimensions');
+  final header = ByteData.sublistView(result.bytes);
+  check(
+    header.getUint32(16) == result.width &&
+        header.getUint32(20) == result.height,
+    'PNG dimensions',
+  );
+  check(
+    result.format == ImageFormat.png && result.mimeType == 'image/png',
+    'Format',
+  );
+  for (final bytes in [
+    result.bytes,
+    result.bytes.buffer.asUint8List(),
+    Uint8List.sublistView(result.bytes),
+  ]) {
+    try {
+      bytes[0] = 0;
+      throw StateError('Mutable result');
+    } on UnsupportedError {
+      /* Expected mutation guard. */
+    }
+  }
+  final inside = slim.transformSync(
+    input,
+    operations: [Resize.inside(maxWidth: 100)],
+    encoding: const PngEncoding(),
+  );
+  check(
+    inside.width == jpeg.width && inside.height == jpeg.height,
+    'Inside must not enlarge',
+  );
+  final cover = slim.transformSync(
+    input,
+    operations: [Resize.cover(width: 2, height: 3)],
+    encoding: const PngEncoding(),
+  );
+  check(cover.width == 2 && cover.height == 3, 'Cover dimensions');
   for (var i = 0; i < 1000; i++) {
-    slim.transform(input, plan);
+    slim.transformSync(input, operations: plan, encoding: const PngEncoding());
+  }
+  final fixtures = '${File(args[1]).parent.path}/contracts';
+  for (final entry in {
+    'animated.png': SlimPixelsErrorCode.animatedInputUnsupported,
+    'animated.webp': SlimPixelsErrorCode.animatedInputUnsupported,
+    'gray.png': SlimPixelsErrorCode.unsupportedPixelFormat,
+    'depth16.png': SlimPixelsErrorCode.unsupportedPixelFormat,
+    'transparent.png': SlimPixelsErrorCode.transparencyUnsupported,
+  }.entries) {
+    try {
+      slim.transformSync(
+        File('$fixtures/${entry.key}').readAsBytesSync(),
+        encoding: JpegEncoding(),
+      );
+      throw StateError('Expected rejection of ${entry.key}');
+    } on SlimPixelsException catch (e) {
+      check(
+        e.code == entry.value && e.operationIndex == null,
+        'Image policy ${entry.key}',
+      );
+    }
+  }
+  final opaque = File('$fixtures/opaque.png').readAsBytesSync();
+  check(
+    slim.transformSync(opaque, encoding: JpegEncoding()).width == 3,
+    'Opaque RGBA to JPEG',
+  );
+  for (final shape in [(1, 1), (2, 3), (1, 20), (20, 1)]) {
+    final tiny = slim.transformSync(
+      opaque,
+      operations: [Resize.cover(width: shape.$1, height: shape.$2)],
+      encoding: const PngEncoding(),
+    );
+    check(
+      tiny.width == shape.$1 && tiny.height == shape.$2,
+      'Fractional cover $shape',
+    );
   }
   stdout.writeln(
-    'PASS: five invalid requests, valid request after failures, geometry dimensions, SIMD/scalar equality, 1000 create-copy-free cycles.',
+    'PASS: typed arguments, failure codes/index, metadata, read-only bytes, resize policies, 1000 cycles',
   );
 }

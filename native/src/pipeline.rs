@@ -1,25 +1,33 @@
-use fast_image_resize::{
-    CpuExtensions, FilterType, IntoImageView, PixelType, ResizeAlg, ResizeOptions, Resizer,
-    images::{CroppedImage, Image},
-};
-use image::{DynamicImage, ImageFormat, RgbImage, RgbaImage, codecs::jpeg::JpegEncoder};
-use serde::Deserialize;
-use std::io::Cursor;
-
 #[cfg(all(
     feature = "turbo-jpeg",
     any(target_os = "windows", target_os = "linux"),
     target_arch = "x86_64"
 ))]
 use crate::jpeg;
+use fast_image_resize::{
+    CpuExtensions, FilterType, IntoImageView, PixelType, ResizeAlg, ResizeOptions, Resizer,
+    images::{CroppedImage, Image},
+};
+use image::{
+    DynamicImage, ImageDecoder, ImageFormat, RgbImage, RgbaImage,
+    codecs::{jpeg::JpegEncoder, png::PngDecoder, webp::WebPDecoder},
+};
+use serde::Deserialize;
+use std::io::Cursor;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
-/// Ordered geometry operations. Resize uses encoded color values.
 pub enum Op {
     Resize {
         width: u32,
         height: u32,
+        filter: String,
+    },
+    Fit {
+        width: Option<u32>,
+        height: Option<u32>,
+        mode: String,
+        allow_upscale: bool,
         filter: String,
     },
     Crop {
@@ -34,9 +42,7 @@ pub enum Op {
     FlipHorizontal,
     FlipVertical,
 }
-
 #[derive(Deserialize)]
-/// Transform contract shared by Rust and the JSON C ABI.
 pub struct Request {
     pub operations: Vec<Op>,
     pub format: String,
@@ -44,14 +50,142 @@ pub struct Request {
     #[serde(default)]
     pub scalar: bool,
 }
-
+/// Stable ABI status; messages never contain dependency diagnostics.
+#[derive(Debug)]
+pub struct Failure {
+    pub code: i32,
+    pub operation: Option<usize>,
+}
+impl Failure {
+    fn new(code: i32) -> Self {
+        Self {
+            code,
+            operation: None,
+        }
+    }
+}
+impl std::fmt::Display for Failure {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self.code {
+            6 => "Crop outside image",
+            7 => "Upscale required",
+            8 => "Resource limit exceeded",
+            _ => "Image processing failed",
+        })
+    }
+}
+pub struct Output {
+    pub bytes: Vec<u8>,
+    pub width: u32,
+    pub height: u32,
+    pub format: u32,
+}
+fn failure(code: i32) -> Failure {
+    Failure::new(code)
+}
+fn decode_error(e: image::ImageError) -> Failure {
+    failure(if matches!(e, image::ImageError::Limits(_)) {
+        8
+    } else {
+        5
+    })
+}
 pub(crate) fn dimensions(w: u32, h: u32) -> Result<(), String> {
     if w == 0 || h == 0 || u64::from(w) * u64::from(h) > 32_000_000 {
-        return Err("Dimensions must be positive and at most 32 million pixels".into());
+        Err("Dimensions must be positive and at most 32 million pixels".into())
+    } else {
+        Ok(())
     }
-    Ok(())
 }
-
+fn bounded(w: u32, h: u32) -> Result<(), Failure> {
+    dimensions(w, h).map_err(|_| failure(8))
+}
+fn decode(input: &[u8]) -> Result<DynamicImage, Failure> {
+    let format = image::guess_format(input).map_err(|_| failure(2))?;
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(16384);
+    limits.max_image_height = Some(16384);
+    limits.max_alloc = Some(256 * 1024 * 1024);
+    let mut decoder: Box<dyn ImageDecoder> = match format {
+        ImageFormat::Png => {
+            let d = PngDecoder::with_limits(Cursor::new(input), limits.clone())
+                .map_err(decode_error)?;
+            if d.is_apng().map_err(decode_error)? {
+                return Err(failure(3));
+            }
+            Box::new(d)
+        }
+        ImageFormat::WebP => {
+            let d = WebPDecoder::new(Cursor::new(input)).map_err(decode_error)?;
+            if d.has_animation() {
+                return Err(failure(3));
+            }
+            Box::new(d)
+        }
+        ImageFormat::Jpeg => Box::new(
+            image::codecs::jpeg::JpegDecoder::new(Cursor::new(input)).map_err(decode_error)?,
+        ),
+        _ => return Err(failure(2)),
+    };
+    let (w, h) = decoder.dimensions();
+    bounded(w, h)?;
+    limits.check_dimensions(w, h).map_err(decode_error)?;
+    if !matches!(
+        decoder.color_type(),
+        image::ColorType::Rgb8 | image::ColorType::Rgba8
+    ) {
+        return Err(failure(4));
+    }
+    // Match ImageReader's output reservation before applying remaining decoder limits.
+    limits
+        .reserve(decoder.total_bytes())
+        .map_err(decode_error)?;
+    decoder.set_limits(limits).map_err(decode_error)?;
+    DynamicImage::from_decoder(decoder).map_err(decode_error)
+}
+fn resize_view_options(
+    src: &impl IntoImageView,
+    w: u32,
+    h: u32,
+    filter: &str,
+    scalar: bool,
+    cover: bool,
+) -> Result<DynamicImage, Failure> {
+    bounded(w, h)?;
+    let pixel = match src.pixel_type() {
+        Some(PixelType::U8x3) => PixelType::U8x3,
+        Some(PixelType::U8x4) => PixelType::U8x4,
+        _ => return Err(failure(4)),
+    };
+    let filter = match filter {
+        "lanczos3" => FilterType::Lanczos3,
+        "triangle" => FilterType::Bilinear,
+        _ => return Err(failure(11)),
+    };
+    let mut dst = Image::new(w, h, pixel);
+    let mut resizer = Resizer::new();
+    if scalar {
+        unsafe { resizer.set_cpu_extensions(CpuExtensions::None) };
+    }
+    // Keep the encoded-color, straight-channel contract.
+    let mut options = ResizeOptions::new()
+        .resize_alg(ResizeAlg::Convolution(filter))
+        .use_alpha(false);
+    if cover {
+        options = options.fit_into_destination(Some((0.5, 0.5)));
+    }
+    resizer
+        .resize(src, &mut dst, &options)
+        .map_err(|_| failure(11))?;
+    let bytes = dst.into_vec();
+    Ok(match pixel {
+        PixelType::U8x3 => {
+            DynamicImage::ImageRgb8(RgbImage::from_raw(w, h, bytes).ok_or_else(|| failure(11))?)
+        }
+        _ => DynamicImage::ImageRgba8(RgbaImage::from_raw(w, h, bytes).ok_or_else(|| failure(11))?),
+    })
+}
+#[cfg(test)]
 fn resize(
     src: &DynamicImage,
     w: u32,
@@ -59,91 +193,101 @@ fn resize(
     filter: &str,
     scalar: bool,
 ) -> Result<DynamicImage, String> {
-    resize_view(src, w, h, filter, scalar)
+    resize_view_options(src, w, h, filter, scalar, false).map_err(|e| e.to_string())
 }
-
-fn resize_view(
-    src: &impl IntoImageView,
+fn fit_size(
     w: u32,
     h: u32,
-    filter: &str,
-    scalar: bool,
-) -> Result<DynamicImage, String> {
-    dimensions(w, h)?;
-    let pixel = match src.pixel_type() {
-        Some(PixelType::U8x3) => PixelType::U8x3,
-        Some(PixelType::U8x4) => PixelType::U8x4,
-        _ => return Err("Only accepts RGB8/RGBA8 only".into()),
-    };
-    let filter = match filter {
-        "lanczos3" => FilterType::Lanczos3,
-        "triangle" => FilterType::Bilinear,
-        _ => return Err("Unsupported resize filter".into()),
-    };
-    let mut dst = Image::new(w, h, pixel);
-    let mut resizer = Resizer::new();
-    if scalar {
-        // None is supported on every target; never force an unsupported ISA.
-        unsafe { resizer.set_cpu_extensions(CpuExtensions::None) };
+    tw: Option<u32>,
+    th: Option<u32>,
+    mode: &str,
+    up: bool,
+) -> Result<(u32, u32, bool), Failure> {
+    if tw == Some(0) || th == Some(0) {
+        return Err(failure(11));
     }
-    // Preserve straight-channel, encoded-color-space behavior; no linear-light
-    // conversion or alpha premultiplication is performed here.
-    let options = ResizeOptions::new()
-        .resize_alg(ResizeAlg::Convolution(filter))
-        .use_alpha(false);
-    resizer
-        .resize(src, &mut dst, &options)
-        .map_err(|e| e.to_string())?;
-    let bytes = dst.into_vec();
-    Ok(match pixel {
-        PixelType::U8x3 => {
-            DynamicImage::ImageRgb8(RgbImage::from_raw(w, h, bytes).ok_or("Invalid RGB size")?)
-        }
-        _ => DynamicImage::ImageRgba8(RgbaImage::from_raw(w, h, bytes).ok_or("Invalid RGBA size")?),
-    })
+    if mode == "inside" {
+        let (n, d) = match (tw, th) {
+            (Some(a), Some(b)) if u64::from(a) * u64::from(h) <= u64::from(b) * u64::from(w) => {
+                (a, w)
+            }
+            (Some(_), Some(b)) => (b, h),
+            (Some(a), None) => (a, w),
+            (None, Some(b)) => (b, h),
+            _ => return Err(failure(11)),
+        };
+        let n = if up { n } else { n.min(d) };
+        let a = (u64::from(w) * u64::from(n) / u64::from(d)).max(1);
+        let b = (u64::from(h) * u64::from(n) / u64::from(d)).max(1);
+        let a = u32::try_from(a).map_err(|_| failure(8))?;
+        let b = u32::try_from(b).map_err(|_| failure(8))?;
+        bounded(a, b)?;
+        return Ok((a, b, false));
+    }
+    let (a, b) = tw.zip(th).ok_or_else(|| failure(11))?;
+    if mode != "exact" && mode != "cover" {
+        return Err(failure(11));
+    }
+    bounded(a, b)?;
+    if !up && (a > w || b > h) {
+        return Err(failure(7));
+    }
+    Ok((a, b, mode == "cover"))
 }
-
-fn validate_crop(img: &DynamicImage, x: u32, y: u32, w: u32, h: u32) -> Result<(), String> {
-    dimensions(w, h)?;
+fn resize_op(
+    src: &impl IntoImageView,
+    size: (u32, u32),
+    op: &Op,
+    scalar: bool,
+) -> Option<Result<DynamicImage, Failure>> {
+    match op {
+        Op::Resize {
+            width,
+            height,
+            filter,
+        } => Some(resize_view_options(
+            src, *width, *height, filter, scalar, false,
+        )),
+        Op::Fit {
+            width,
+            height,
+            mode,
+            allow_upscale,
+            filter,
+        } => Some(
+            fit_size(size.0, size.1, *width, *height, mode, *allow_upscale)
+                .and_then(|(w, h, cover)| resize_view_options(src, w, h, filter, scalar, cover)),
+        ),
+        _ => None,
+    }
+}
+fn validate_crop(img: &DynamicImage, x: u32, y: u32, w: u32, h: u32) -> Result<(), Failure> {
+    bounded(w, h)?;
     if u64::from(x) + u64::from(w) > u64::from(img.width())
         || u64::from(y) + u64::from(h) > u64::from(img.height())
     {
-        return Err("Crop outside image".into());
+        Err(failure(6))
+    } else {
+        Ok(())
     }
-    Ok(())
 }
-
-/// Decode once, apply operations in order, then return owned encoded bytes.
-/// Metadata and animation are not preserved. See README for limits.
-pub fn process(input: &[u8], request: &Request) -> Result<Vec<u8>, String> {
+pub fn transform(input: &[u8], request: &Request) -> Result<Output, Failure> {
     if input.is_empty() || input.len() > 256 * 1024 * 1024 || request.operations.len() > 64 {
-        return Err("Invalid input or too many operations".into());
+        return Err(failure(11));
     }
-    let mut reader = image::ImageReader::new(Cursor::new(input))
-        .with_guessed_format()
-        .map_err(|e| e.to_string())?;
-    if !matches!(
-        reader.format(),
-        Some(ImageFormat::Png | ImageFormat::Jpeg | ImageFormat::WebP)
-    ) {
-        return Err("Only static PNG/JPEG/WebP inputs are in scope".into());
+    let format = match request.format.as_str() {
+        "jpeg" => 1,
+        "png" => 2,
+        "webp" => 3,
+        _ => return Err(failure(11)),
+    };
+    if format == 1 && !(1..=100).contains(&request.quality) {
+        return Err(failure(11));
     }
-    let mut limits = image::Limits::default();
-    limits.max_image_width = Some(16384);
-    limits.max_image_height = Some(16384);
-    limits.max_alloc = Some(256 * 1024 * 1024);
-    reader.limits(limits);
-    let mut img = reader.decode().map_err(|e| e.to_string())?;
-    dimensions(img.width(), img.height())?;
-    if !matches!(
-        img,
-        DynamicImage::ImageRgb8(_) | DynamicImage::ImageRgba8(_)
-    ) {
-        return Err("Only accepts RGB8/RGBA8 only".into());
-    }
-    let mut operations = request.operations.iter().peekable();
-    while let Some(op) = operations.next() {
-        // Only adjacent crop -> resize is fused; the crop remains the filter boundary.
+    let mut img = decode(input)?;
+    let mut i = 0;
+    while i < request.operations.len() {
+        let op = &request.operations[i];
         if let Op::Crop {
             x,
             y,
@@ -151,73 +295,173 @@ pub fn process(input: &[u8], request: &Request) -> Result<Vec<u8>, String> {
             height,
         } = op
         {
-            validate_crop(&img, *x, *y, *width, *height)?;
-            if let Some(Op::Resize {
-                width: target_w,
-                height: target_h,
-                filter,
-            }) = operations.peek()
-            {
+            validate_crop(&img, *x, *y, *width, *height).map_err(|mut e| {
+                e.operation = Some(i);
+                e
+            })?;
+            if let Some(next) = request.operations.get(i + 1) {
                 let view =
-                    CroppedImage::new(&img, *x, *y, *width, *height).map_err(|e| e.to_string())?;
-                img = resize_view(&view, *target_w, *target_h, filter, request.scalar)?;
-                operations.next();
-                continue;
-            }
-        }
-        img = match op {
-            Op::Resize {
-                width,
-                height,
-                filter,
-            } => resize(&img, *width, *height, filter, request.scalar)?,
-            Op::Crop {
-                x,
-                y,
-                width,
-                height,
-            } => img.crop_imm(*x, *y, *width, *height),
-            Op::Rotate90 => img.rotate90(),
-            Op::Rotate180 => img.rotate180(),
-            Op::Rotate270 => img.rotate270(),
-            Op::FlipHorizontal => img.fliph(),
-            Op::FlipVertical => img.flipv(),
-        };
-    }
-    let mut out = Cursor::new(Vec::new());
-    match request.format.as_str() {
-        "jpeg" => {
-            if !(1..=100).contains(&request.quality) {
-                return Err("JPEG quality must be 1..100".into());
-            }
-            // Only the RGB/Q90 contract passed all encoder screening cases.
-            #[cfg(all(
-                feature = "turbo-jpeg",
-                any(target_os = "windows", target_os = "linux"),
-                target_arch = "x86_64"
-            ))]
-            if request.quality == 90 {
-                if let DynamicImage::ImageRgb8(ref rgb) = img {
-                    return jpeg::encode(rgb);
+                    CroppedImage::new(&img, *x, *y, *width, *height).map_err(|_| failure(11))?;
+                if let Some(result) = resize_op(&view, (*width, *height), next, request.scalar) {
+                    img = result.map_err(|mut e| {
+                        e.operation = Some(i + 1);
+                        e
+                    })?;
+                    i += 2;
+                    continue;
                 }
             }
-            img.write_with_encoder(JpegEncoder::new_with_quality(&mut out, request.quality))
-                .map_err(|e| e.to_string())?;
         }
-        "png" => img
-            .write_to(&mut out, ImageFormat::Png)
-            .map_err(|e| e.to_string())?,
-        "webp" => img
-            .write_to(&mut out, ImageFormat::WebP)
-            .map_err(|e| e.to_string())?,
-        _ => return Err("Unsupported output format".into()),
+        let result = if let Some(result) =
+            resize_op(&img, (img.width(), img.height()), op, request.scalar)
+        {
+            result
+        } else {
+            Ok(match op {
+                Op::Crop {
+                    x,
+                    y,
+                    width,
+                    height,
+                } => img.crop_imm(*x, *y, *width, *height),
+                Op::Rotate90 => img.rotate90(),
+                Op::Rotate180 => img.rotate180(),
+                Op::Rotate270 => img.rotate270(),
+                Op::FlipHorizontal => img.fliph(),
+                Op::FlipVertical => img.flipv(),
+                _ => unreachable!(),
+            })
+        };
+        img = result.map_err(|mut e| {
+            e.operation = Some(i);
+            e
+        })?;
+        i += 1;
     }
-    Ok(out.into_inner())
+    let (width, height) = (img.width(), img.height());
+    if format == 1 {
+        if let DynamicImage::ImageRgba8(ref rgba) = img {
+            if rgba.pixels().any(|p| p[3] != 255) {
+                return Err(failure(9));
+            }
+            img = DynamicImage::ImageRgb8(img.to_rgb8());
+        }
+    }
+    let mut out = Cursor::new(Vec::new());
+    if format == 1 {
+        #[cfg(all(
+            feature = "turbo-jpeg",
+            any(target_os = "windows", target_os = "linux"),
+            target_arch = "x86_64"
+        ))]
+        if request.quality == 90 {
+            if let DynamicImage::ImageRgb8(ref rgb) = img {
+                return Ok(Output {
+                    bytes: jpeg::encode(rgb).map_err(|_| failure(10))?,
+                    width,
+                    height,
+                    format,
+                });
+            }
+        }
+        img.write_with_encoder(JpegEncoder::new_with_quality(&mut out, request.quality))
+            .map_err(|_| failure(10))?;
+    } else {
+        img.write_to(
+            &mut out,
+            if format == 2 {
+                ImageFormat::Png
+            } else {
+                ImageFormat::WebP
+            },
+        )
+        .map_err(|_| failure(10))?;
+    }
+    Ok(Output {
+        bytes: out.into_inner(),
+        width,
+        height,
+        format,
+    })
 }
-
+/// Raw research adapter; the public Dart API uses structured ABI metadata.
+pub fn process(input: &[u8], request: &Request) -> Result<Vec<u8>, String> {
+    transform(input, request)
+        .map(|o| o.bytes)
+        .map_err(|e| e.to_string())
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn typed_fit_rounding_and_limits() {
+        assert_eq!(
+            fit_size(3, 2, Some(2), Some(3), "cover", true).unwrap(),
+            (2, 3, true)
+        );
+        assert_eq!(
+            fit_size(17, 13, Some(8), None, "inside", false).unwrap(),
+            (8, 6, false)
+        );
+        assert_eq!(
+            fit_size(17, 13, Some(100), None, "inside", false).unwrap(),
+            (17, 13, false)
+        );
+        assert_eq!(
+            fit_size(3, 2, Some(2), Some(3), "cover", false)
+                .unwrap_err()
+                .code,
+            7
+        );
+        assert_eq!(
+            fit_size(1, 1, Some(u32::MAX), None, "inside", true)
+                .unwrap_err()
+                .code,
+            8
+        );
+        assert!(fit_size(3, 2, None, None, "inside", false).is_err());
+    }
+
+    #[test]
+    fn cover_crop_fusion_preserves_boundary() {
+        let source = DynamicImage::ImageRgb8(RgbImage::from_fn(7, 5, |x, y| {
+            image::Rgb([(x * 35) as u8, (y * 45) as u8, 90])
+        }));
+        let mut input = Cursor::new(Vec::new());
+        source.write_to(&mut input, ImageFormat::Png).unwrap();
+        for filter in ["lanczos3", "triangle"] {
+            for (w, h) in [(2, 3), (1, 20), (20, 1), (1, 1)] {
+                let request = |separated| {
+                    let mut operations = vec![Op::Crop {
+                        x: 2,
+                        y: 1,
+                        width: 3,
+                        height: 2,
+                    }];
+                    if separated {
+                        operations.extend([Op::FlipHorizontal, Op::FlipHorizontal]);
+                    }
+                    operations.push(Op::Fit {
+                        width: Some(w),
+                        height: Some(h),
+                        mode: "cover".into(),
+                        allow_upscale: true,
+                        filter: filter.into(),
+                    });
+                    Request {
+                        operations,
+                        format: "png".into(),
+                        quality: 90,
+                        scalar: false,
+                    }
+                };
+                assert_eq!(
+                    process(input.get_ref(), &request(false)).unwrap(),
+                    process(input.get_ref(), &request(true)).unwrap()
+                );
+            }
+        }
+    }
     #[test]
     fn fused_request_matches_materialized_crop() {
         for alpha in [false, true] {

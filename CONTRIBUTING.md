@@ -1,11 +1,15 @@
 # Contributing
 
-Use small, focused branches and pull requests against `main`.
+Use small, focused branches. During a release cycle, base feature/fix branches on
+the active `release/vX-Y-Z` branch and target that branch with pull requests.
+Merge the release documentation branch last, then review the release into `main`.
+Outside a release cycle, target `main`.
 Use Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, or `chore:`. Describe the change, not the editing process. Mark breaking changes with `!` and explain migration steps.
 
 ## Checks
 
 - Run `dart pub get --enforce-lockfile` and `dart analyze --fatal-infos`.
+- Run `python tool/api_contract_check.py dart` and `python tool/docs_check.py dart`.
 - Format Dart with the latest stable SDK and Rust with `cargo +1.97.1 fmt --manifest-path native/Cargo.toml`.
 - Follow [CI.md](CI.md) for native builds and JIT/AOT checks, and [GATES.md](GATES.md) for full quality/memory gates.
 - Describe what was tested and any unavailable environment in the PR. A local subset is not a full CI pass.

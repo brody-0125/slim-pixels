@@ -1,10 +1,12 @@
+// Historical comparison for binaries sharing the pre-ABI-2 alpha policy.
+// Current product policies are checked by golden_check.dart and Rust tests.
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:slim_pixels/slim_pixels.dart';
+import 'raw_pixels.dart';
 
 void main(List<String> args) {
-  final before = SlimPixels(args[0]), after = SlimPixels(args[1]);
+  final before = RawPixels(args[0]), after = RawPixels(args[1]);
   final manifest =
       jsonDecode(File('${args[2]}/manifest.json').readAsStringSync()) as List;
   var passed = 0;
@@ -37,13 +39,15 @@ void main(List<String> args) {
           };
           final a = before.transform(bytes, req),
               b = after.transform(bytes, req);
-          if (a.length != b.length)
+          if (a.length != b.length) {
             throw StateError('Length mismatch ${item['file']} $filter $format');
+          }
           for (var i = 0; i < a.length; i++) {
-            if (a[i] != b[i])
+            if (a[i] != b[i]) {
               throw StateError(
                 'Pixel/encoding mismatch ${item['file']} $filter $format',
               );
+            }
           }
           passed++;
         }

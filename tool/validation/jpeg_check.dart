@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:slim_pixels/slim_pixels.dart';
+import 'raw_pixels.dart';
 
 bool same(Uint8List a, Uint8List b) {
   if (a.length != b.length) return false;
@@ -13,7 +13,7 @@ bool same(Uint8List a, Uint8List b) {
 }
 
 void main(List<String> args) {
-  final old = SlimPixels(args[0]), current = SlimPixels(args[1]);
+  final old = RawPixels(args[0]), current = RawPixels(args[1]);
   final cases = jsonDecode(File(args[2]).readAsStringSync()) as List;
   var golden = 0, unchanged = 0, pipelines = 0;
   for (final item in cases) {
@@ -74,8 +74,9 @@ void main(List<String> args) {
   }
   final expected = current.transform(sample, good);
   for (var i = 0; i < 1000; i++) {
-    if (!same(current.transform(sample, good), expected))
+    if (!same(current.transform(sample, good), expected)) {
       throw StateError('Repeated output changed');
+    }
   }
   stdout.writeln(
     'PASS: $golden Q90 golden FFI cases, $pipelines product resize/encode cases, $unchanged unchanged Q75/Q95 cases, invalid quality/recovery, 1000 JPEG create-copy-free cycles.',

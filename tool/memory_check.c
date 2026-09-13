@@ -4,12 +4,20 @@
 #include <string.h>
 extern int32_t slim_run(const uint8_t*,size_t,const uint8_t*,size_t,uint8_t**,size_t*);
 extern void slim_free(uint8_t*,size_t);
+extern int32_t slim_transform(const uint8_t*,size_t,const uint8_t*,size_t,uint8_t**,size_t*,uint32_t*,uint32_t*,uint32_t*,int32_t*);
 static int calls=0;
 static void check(const uint8_t *input,size_t size,const char *plan,int expected) {
     uint8_t *out=NULL;size_t len=0;
     int code=slim_run(input,size,(const uint8_t*)plan,strlen(plan),&out,&len);
     if(code!=expected){fprintf(stderr,"Unexpected status %d expected %d\n",code,expected);exit(2);}
     if(code==1 && (!out || !len)){fprintf(stderr,"Missing error text\n");exit(3);}
+    slim_free(out,len);calls++;
+    uint32_t w=0,h=0,format=0;int32_t operation=-1;out=NULL;len=0;
+    code=slim_transform(input,size,(const uint8_t*)plan,strlen(plan),&out,&len,&w,&h,&format,&operation);
+    if((expected==0 && (code!=0 || !out || !len || !w || !h || !format)) ||
+       (expected!=0 && (code==0 || out || len))) {
+        fprintf(stderr,"Invalid ABI 2 result %d\n",code);exit(4);
+    }
     slim_free(out,len);calls++;
 }
 int main(int argc,char **argv){

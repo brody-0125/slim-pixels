@@ -22,3 +22,9 @@ tool/memory_gate.sh
 tool/quality_gate.py
 tool/release_bundle.py
 tool/verify.ps1
+
+tool/api_contract_check.py
+
+tool/native_failure_check.py
+
+tool/docs_check.py

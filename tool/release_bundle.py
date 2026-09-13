@@ -25,7 +25,7 @@ for platform in ('windows-x64', 'linux-x64'):
             raise SystemExit('Native hash mismatch: ' + name)
     files = [bundle / name for name in sorted(expected)] + [bundle / 'SHA256SUMS.json', root / 'LICENSE', root / 'THIRD_PARTY_NOTICES.md']
     files += sorted(f for f in (root / 'third_party').rglob('*') if f.is_file())
-    metadata = {'package_version': version, 'abi': 1, 'source_commit': commit,
+    metadata = {'package_version': version, 'abi': 2, 'source_commit': commit,
                 'platform': platform, 'sha256': hashes,
                 'windows_codec_provenance': 'See THIRD_PARTY_NOTICES.md; original compiler flags are not recorded.'}
     archive = output / f'slim-pixels-{version}-{platform}.zip'

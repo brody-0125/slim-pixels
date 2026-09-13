@@ -33,9 +33,8 @@ with tempfile.TemporaryDirectory(prefix='slim consumer ') as temporary:
 import 'dart:io';
 import 'package:slim_pixels/slim_pixels.dart';
 void main() {
-  final result = SlimPixels().transform(File('input.png').readAsBytesSync(), {
-    'operations': [], 'format': 'jpeg', 'quality': 90,
-  });
+  final result = SlimPixels().transformSync(File('input.png').readAsBytesSync(),
+    encoding: JpegEncoding()).bytes;
   final expected = File('expected.jpg').readAsBytesSync();
   if (result.length != expected.length) throw StateError('JPEG size differs');
   for (var i = 0; i < result.length; i++) {

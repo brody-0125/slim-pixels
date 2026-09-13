@@ -42,3 +42,7 @@ dart compile exe test/smoke.dart -o build/smoke
 ## Code Assets 도입 이후
 
 현재 AOT 명령은 `dart compile exe` 대신 `python tool/aot_check.py <검증 Dart 파일> <인수...>`입니다. 모든 SDK/OS에서 별도 소비자 설치와 이동한 번들 실행도 검사합니다. v 태그에서는 전체 게이트 성공 후 플랫폼별 바이너리를 draft release로 묶습니다. 자세한 배포 계약은 `docs/DISTRIBUTION.md`를 참고하세요.
+
+## ABI 2 공개 계약
+
+SDK smoke는 typed API의 인자·오류 위치·결과 메타데이터·읽기 전용 바이트·애니메이션/투명도 정책을 검사한다. golden 게이트는 322개 동일 출력과 12개 명시적 정책 거부를 검사한다. 공식 recommended lint와 공개 문서 lint를 사용하며, 최신 SDK에서 dartdoc도 생성한다.

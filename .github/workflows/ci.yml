@@ -76,6 +76,9 @@ jobs:
       - if: matrix.sdk == '3.10.0'
         run: dart pub downgrade
       - run: dart analyze --fatal-infos
+      - run: python tool/api_contract_check.py dart
+      - if: matrix.sdk == needs.matrix.outputs.latest
+        run: python tool/docs_check.py dart
       - if: matrix.sdk == needs.matrix.outputs.latest
         run: dart format --output=none --set-exit-if-changed lib hook test example tool/validation
       - if: runner.os == 'Linux'
@@ -102,6 +105,8 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'JIT goldens failed' }
           python tool/aot_check.py tool/validation/golden_check.dart native/bin/windows-x64/slim_pixels.dll test/golden
           if ($LASTEXITCODE -ne 0) { throw 'AOT goldens failed' }
+      - if: matrix.sdk == needs.matrix.outputs.latest && runner.os == 'Linux'
+        run: python3 tool/native_failure_check.py dart
       - name: Consumer installation and relocated bundle
         run: python tool/distribution_check.py dart
   quality:
