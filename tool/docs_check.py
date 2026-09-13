@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[1]
-for doc in [*root.glob('*.md'), *root.glob('docs/*.md')]:
+for doc in [*root.glob('*.md'), *root.glob('doc/*.md')]:
     for target in re.findall(r'\[[^\]]*\]\(([^)]+)\)', doc.read_text(encoding='utf-8')):
         if '://' in target or target.startswith('#'):
             continue

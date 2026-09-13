@@ -1,7 +1,17 @@
 name: slim_pixels
 description: Bounded native image transforms with SIMD resize and validated JPEG encoding.
 version: 0.1.2
-publish_to: none
+repository: https://github.com/brody-0125/slim-pixels
+issue_tracker: https://github.com/brody-0125/slim-pixels/issues
+platforms:
+  windows:
+  linux:
+topics:
+  - image-processing
+  - image-resizing
+  - simd
+  - ffi
+  - rust
 environment:
   sdk: '>=3.10.0 <4.0.0'
 dependencies:

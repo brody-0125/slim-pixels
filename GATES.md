@@ -50,7 +50,7 @@ quality_gate는 cargo 1.97.1, Python 3, GCC와 libturbojpeg.so.0가 필요하고
 
 ## 소비자 배포 게이트
 
-모든 SDK/OS 작업은 `tool/distribution_check.py`로 경로 없는 로딩, 잘못된 해시 거부, 소스와 캐시를 삭제한 뒤 이동한 AOT 번들의 실행을 검사합니다. AOT는 `tool/aot_check.py`의 `dart build cli`를 사용합니다. 세부 조건과 미검증 범위는 `docs/DISTRIBUTION.md`에 있습니다.
+모든 SDK/OS 작업은 `tool/distribution_check.py`로 경로 없는 로딩, 잘못된 해시 거부, 소스와 캐시를 삭제한 뒤 이동한 AOT 번들의 실행을 검사합니다. AOT는 `tool/aot_check.py`의 `dart build cli`를 사용합니다. 세부 조건과 미검증 범위는 `doc/DISTRIBUTION.md`에 있습니다.
 
 ## Worker 추가 게이트
 

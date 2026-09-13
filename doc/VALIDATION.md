@@ -46,3 +46,7 @@ Windows/Linux x64의 Dart 3.10.0과 3.13.3에서 worker lifecycle JIT/AOT를 로
 Windows/Linux Dart 3.10.0·3.13.3 worker lifecycle JIT/AOT와 최신 두 OS worker fault JIT/AOT를 로컬 실행했습니다. Linux 네이티브 장애 6종도 JIT/AOT에서 시작/처리 단계와 오류 코드를 함께 확인했습니다. Linux Dart 3.10.0은 locked 실행과 별도의 downgrade 후 분석/API/smoke/worker JIT/AOT 실행을 구분했습니다.
 
 CI에는 모든 SDK의 locked 검사, 독립 minimum 의존성 필수 작업, 최신 SDK 장애 AOT 및 선정 결함 주입 게이트를 연결했습니다. 원격 CI 전체 수행을 뜻하지 않습니다. 메모리 장기 추세 및 native hang/crash 검사는 이번 범위에 포함하지 않습니다.
+
+## 0.1.2 배포 준비 검증
+
+release/v0-1-2는 b01b24f의 성공한 CI 실행 34758504730에 포함된 native artifact와 해시를 적용합니다. Windows/Linux에서 별도 소비자 JIT, 해시 변조 거부, 소스 삭제 후 이동한 AOT 번들의 동기/worker JPEG golden을 다시 확인했습니다. 공개 API와 두 README의 Dart 예제, dartdoc 및 정적 분석을 확인했습니다. 버전은 0.1.2이며 pub.dev 게시는 아직 실행하지 않았습니다.

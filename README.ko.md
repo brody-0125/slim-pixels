@@ -21,12 +21,11 @@ Dart에서 이미지의 크기와 형태를 변환하고 PNG, JPEG, 무손실 We
 
 ## 설치
 
-아직 pub.dev에 게시하지 않았습니다. 로컬 경로 의존성으로 사용할 수 있습니다.
+0.1.2가 pub.dev에 게시되면 다음 의존성을 추가합니다. 현재 브랜치는 릴리스 준비 상태이며 게시는 아직 진행하지 않았습니다.
 
 ```yaml
 dependencies:
-  slim_pixels:
-    path: ../slim-pixels
+  slim_pixels: ^0.1.2
 ```
 
 ## 빠른 시작
@@ -120,7 +119,7 @@ Resize의 기본 필터는 `ResizeFilter.lanczos3`이며 `triangle`도 제공합
 - 잘못된 선언적 인자는 `ArgumentError`, 알려진 실행 실패는 `SlimPixelsException`입니다. `code`로 분기하고 `message`는 파싱하지 마세요. 작업 실패의 `operationIndex`는 0부터 시작합니다.
 - VM 메모리 고갈, 프로세스 종료, Rust panic은 복구 가능한 예외로 보장하지 않습니다.
 
-공개 API 계약 ([docs/API.md](https://github.com/brody-0125/slim-pixels/blob/main/docs/API.md))에 타입 목록, 오류 코드, 소유권과 호환성 정책을 정리했습니다.
+공개 API 계약 ([doc/API.md](https://github.com/brody-0125/slim-pixels/blob/main/doc/API.md))에 타입 목록, 오류 코드, 소유권과 호환성 정책을 정리했습니다.
 
 ## 네이티브 빌드
 
@@ -137,7 +136,7 @@ Resize의 기본 필터는 `ResizeFilter.lanczos3`이며 `triangle`도 제공합
 bash tool/build-linux.sh
 ```
 
-Windows 빌드에는 MSVC와 Rust 1.97.1이 필요합니다. CI ([CI.md](https://github.com/brody-0125/slim-pixels/blob/main/CI.md)), 품질 게이트 ([GATES.md](https://github.com/brody-0125/slim-pixels/blob/main/GATES.md)), 배포 조건 ([docs/DISTRIBUTION.md](https://github.com/brody-0125/slim-pixels/blob/main/docs/DISTRIBUTION.md)), 검증 기록 ([docs/VALIDATION.md](https://github.com/brody-0125/slim-pixels/blob/main/docs/VALIDATION.md))을 참고하세요. 실제 성능은 입력과 환경에 따라 달라집니다.
+Windows 빌드에는 MSVC와 Rust 1.97.1이 필요합니다. CI ([CI.md](https://github.com/brody-0125/slim-pixels/blob/main/CI.md)), 품질 게이트 ([GATES.md](https://github.com/brody-0125/slim-pixels/blob/main/GATES.md)), 배포 조건 ([doc/DISTRIBUTION.md](https://github.com/brody-0125/slim-pixels/blob/main/doc/DISTRIBUTION.md)), 검증 기록 ([doc/VALIDATION.md](https://github.com/brody-0125/slim-pixels/blob/main/doc/VALIDATION.md))을 참고하세요. 실제 성능은 입력과 환경에 따라 달라집니다.
 
 ## 테스트
 
