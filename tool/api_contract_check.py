@@ -45,11 +45,12 @@ String name(ImageFormat format) => switch (format) {
 };
 """, encoding='utf-8')
     subprocess.run([dart, 'analyze', '--fatal-infos', str(good)], cwd=root, check=True)
-    for index, snippet in enumerate(re.findall(r'```dart\n(.*?)```',
-            (root / 'README.md').read_text(encoding='utf-8'), re.S)):
-        example = path / f'readme_{index}.dart'
-        example.write_text(snippet, encoding='utf-8')
-        subprocess.run([dart, 'analyze', '--fatal-infos', str(example)], cwd=root, check=True)
+    for readme in ('README.md', 'README.ko.md'):
+        for index, snippet in enumerate(re.findall(r'```dart\n(.*?)```',
+                (root / readme).read_text(encoding='utf-8'), re.S)):
+            example = path / f'{Path(readme).stem.lower().replace('.', '_')}_{index}.dart'
+            example.write_text(snippet, encoding='utf-8')
+            subprocess.run([dart, 'analyze', '--fatal-infos', str(example)], cwd=root, check=True)
 
     result = subprocess.run([dart, 'analyze', '--format', 'machine', str(bad)], cwd=root,
                             capture_output=True, text=True)
