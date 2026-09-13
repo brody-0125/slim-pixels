@@ -21,12 +21,11 @@ Use `SlimPixels.transformSync` for synchronous calls or `SlimPixelsWorker.transf
 
 ## Installation
 
-The package has no pub.dev release yet. Clone this repository beside your application and add a path dependency:
+For version 0.1.2, add this dependency after the release appears on pub.dev. This branch prepares the release; publication is pending.
 
 ```yaml
 dependencies:
-  slim_pixels:
-    path: ../slim-pixels
+  slim_pixels: ^0.1.2
 ```
 
 ## Quick Start
@@ -122,7 +121,7 @@ Operations run in list order. A crop followed by a resize skips the cropped-imag
 - Invalid arguments raise `ArgumentError`. Known execution failures use `SlimPixelsException`. Branch on `code`; treat `message` as diagnostic text. An operation failure has a zero-based `operationIndex`. Worker methods report call errors through their Futures.
 - VM memory exhaustion, process termination, and Rust panics fall outside the recoverable exception contract.
 
-See the [API contract](https://github.com/brody-0125/slim-pixels/blob/main/docs/API.md) for the type list, error codes, and ownership rules. Supporting documents are in Korean.
+See the [API contract](https://github.com/brody-0125/slim-pixels/blob/main/doc/API.md) for the type list, error codes, and ownership rules. Supporting documents are in Korean.
 
 ## Native Builds
 
@@ -139,7 +138,7 @@ For a CLI application, use `dart build cli` and distribute the entire generated 
 bash tool/build-linux.sh
 ```
 
-The Windows build requires MSVC and Rust 1.97.1. See [distribution requirements](https://github.com/brody-0125/slim-pixels/blob/main/docs/DISTRIBUTION.md), [CI](https://github.com/brody-0125/slim-pixels/blob/main/CI.md), and [quality gates](https://github.com/brody-0125/slim-pixels/blob/main/GATES.md). The [validation record](https://github.com/brody-0125/slim-pixels/blob/main/docs/VALIDATION.md) distinguishes local checks from CI configuration. Performance depends on the input and runtime environment.
+The Windows build requires MSVC and Rust 1.97.1. See [distribution requirements](https://github.com/brody-0125/slim-pixels/blob/main/doc/DISTRIBUTION.md), [CI](https://github.com/brody-0125/slim-pixels/blob/main/CI.md), and [quality gates](https://github.com/brody-0125/slim-pixels/blob/main/GATES.md). The [validation record](https://github.com/brody-0125/slim-pixels/blob/main/doc/VALIDATION.md) distinguishes local checks from CI configuration. Performance depends on the input and runtime environment.
 
 ## Testing
 

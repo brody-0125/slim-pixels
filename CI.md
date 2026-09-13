@@ -17,9 +17,9 @@
 
 ## 실제 검증 상태
 
-원격 GitHub Actions는 아직 실행하지 않았다. 현재 폴더에 연결된 저장소가 없으므로 48개 원격 조합 성공을 주장하지 않는다. 이관 전 로컬 실행 범위는 [docs/VALIDATION.md](docs/VALIDATION.md)에 요약했다. 원시 로그는 기존 실험 산출물에 보존한다. GitHub hosted runner의 이미지·권한·네트워크 차이는 첫 원격 실행에서 확인해야 한다.
+main의 b01b24f는 [원격 CI](https://github.com/brody-0125/slim-pixels/actions/runs/34758504730)를 통과했습니다. 릴리스 브랜치의 최종 커밋은 별도 CI 검증 대상입니다. 이전 로컬 기록은 [doc/VALIDATION.md](doc/VALIDATION.md)에 보존합니다.
 
-Linux CI는 이전 Linux 후보의 링크 변경을 라이브러리 소스에 반영해 빌드한다. ZIP에 포함된 사전 빌드 DLL은 Windows용이다. Linux용 `.so`는 `bash tool/build-linux.sh` 또는 CI artifact로 얻는다. Linux 실행 시 `LD_LIBRARY_PATH`에 두 `.so`가 있는 디렉터리를 지정한다. Docker 및 성능 임계값에 따른 merge 차단은 이 호환성 workflow에 포함하지 않는다.
+패키지에는 Windows/Linux x64 바이너리를 포함합니다. build hook이 플랫폼 자산을 번들링하므로 소비자 실행에 LD_LIBRARY_PATH 설정을 요구하지 않습니다. 네이티브 C 검증 harness는 자체 링크 환경을 설정합니다. 성능 측정값은 보고용이며 merge 차단 임계치가 아닙니다.
 
 ## 로컬 실행
 
@@ -28,20 +28,18 @@ Windows: `./tool/build.ps1`, `./tool/verify.ps1`.
 Linux: CMake, NASM, GCC, Rust 1.97.1 설치 후 `bash tool/build-linux.sh`.
 
 ```sh
-export LD_LIBRARY_PATH="$PWD/native/bin/linux-x64"
 dart pub get --enforce-lockfile
 dart analyze --fatal-infos
 dart run test/smoke.dart native/bin/linux-x64/libslim_pixels.so test/fixtures/rgb.png
-mkdir -p build
-dart compile exe test/smoke.dart -o build/smoke
-./build/smoke native/bin/linux-x64/libslim_pixels.so test/fixtures/rgb.png
+python3 tool/aot_check.py test/smoke.dart unused test/fixtures/rgb.png
+dart run test/worker.dart
 ```
 
 참고: [setup-dart](https://github.com/dart-lang/setup-dart), [Dart stable archive](https://dart.dev/get-dart/archive).
 
 ## Code Assets 도입 이후
 
-현재 AOT 명령은 `dart compile exe` 대신 `python tool/aot_check.py <검증 Dart 파일> <인수...>`입니다. 모든 SDK/OS에서 별도 소비자 설치와 이동한 번들 실행도 검사합니다. v 태그에서는 전체 게이트 성공 후 플랫폼별 바이너리를 draft release로 묶습니다. 자세한 배포 계약은 `docs/DISTRIBUTION.md`를 참고하세요.
+현재 AOT 명령은 `dart compile exe` 대신 `python tool/aot_check.py <검증 Dart 파일> <인수...>`입니다. 모든 SDK/OS에서 별도 소비자 설치와 이동한 번들 실행도 검사합니다. v 태그에서는 전체 게이트 성공 후 플랫폼별 바이너리를 draft release로 묶습니다. 자세한 배포 계약은 `doc/DISTRIBUTION.md`를 참고하세요.
 
 ## ABI 2 공개 계약
 
