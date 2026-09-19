@@ -13,6 +13,7 @@ bin/slim_validation.dart
 .env.*
 .idea/
 .vscode/
+.cursor/
 tool/aot_check.py
 tool/dart_matrix.py
 tool/dart_matrix_test.py
