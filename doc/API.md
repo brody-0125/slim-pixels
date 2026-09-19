@@ -1,6 +1,6 @@
 # 공개 API 계약
 
-ABI 2 기반의 현재 작업 트리 계약입니다. 지원 범위와 실행 예시는 [README](../README.md), 이행 기록은 [CHANGELOG](../CHANGELOG.md)를 참고하세요.
+ABI 2 기반의 현재 작업 트리 계약입니다. 지원 범위와 실행 예시는 [README](../README.md), 이행 기록은 [CHANGELOG](../CHANGELOG.ko.md)를 참고하세요.
 
 ## 진입점과 타입
 

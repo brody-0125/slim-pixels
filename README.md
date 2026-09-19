@@ -21,11 +21,11 @@ Use `SlimPixels.transformSync` for synchronous calls or `SlimPixelsWorker.transf
 
 ## Installation
 
-For version 0.1.2, add this dependency after the release appears on pub.dev. This branch prepares the release; publication is pending.
+For version 0.1.3, add this dependency after the release appears on pub.dev. This branch prepares the release; publication is pending.
 
 ```yaml
 dependencies:
-  slim_pixels: ^0.1.2
+  slim_pixels: ^0.1.3
 ```
 
 ## Quick Start
