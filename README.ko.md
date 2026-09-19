@@ -136,7 +136,7 @@ Resize의 기본 필터는 `ResizeFilter.lanczos3`이며 `triangle`도 제공합
 bash tool/build-linux.sh
 ```
 
-Windows 빌드에는 MSVC와 Rust 1.97.1이 필요합니다. 지원 SDK, 게이트, 검증 범위는 CI ([CI.md](https://github.com/brody-0125/slim-pixels/blob/main/CI.md))를 참고하세요. 실제 성능은 입력과 환경에 따라 달라집니다.
+Windows 빌드에는 MSVC와 Rust 1.97.1이 필요합니다. 지원 SDK, 게이트, 검증 범위는 `.github/workflows/ci.yml`과 `tool/`에 정의합니다. 실제 성능은 입력과 환경에 따라 달라집니다.
 
 ## 테스트
 

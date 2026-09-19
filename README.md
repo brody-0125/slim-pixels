@@ -138,7 +138,7 @@ For a CLI application, use `dart build cli` and distribute the entire generated 
 bash tool/build-linux.sh
 ```
 
-The Windows build requires MSVC and Rust 1.97.1. See [CI](https://github.com/brody-0125/slim-pixels/blob/main/CI.md) for supported SDKs, gates, and validation scope. Performance depends on the input and runtime environment.
+The Windows build requires MSVC and Rust 1.97.1. Supported SDKs, gates, and validation scope are defined in `.github/workflows/ci.yml` and `tool/`. Performance depends on the input and runtime environment.
 
 ## Testing
 

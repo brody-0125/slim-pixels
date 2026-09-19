@@ -11,7 +11,7 @@ Use Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, or `ch
 - Run `dart pub get --enforce-lockfile` and `dart analyze --fatal-infos`.
 - Run `python tool/api_contract_check.py dart` and `python tool/docs_check.py dart`.
 - Format Dart with the latest stable SDK and Rust with `cargo +1.97.1 fmt --manifest-path native/Cargo.toml`.
-- Follow [CI.md](CI.md) for native builds, JIT/AOT checks, and quality/memory gates.
+- For native builds, JIT/AOT checks, and quality/memory gates, see `.github/workflows/ci.yml` and `tool/`.
 - Describe what was tested and any unavailable environment in the PR. A local subset is not a full CI pass.
 - Do not regenerate golden outputs just to make a failing gate pass. Submit baseline changes with explicit quality evidence and provenance review.
 
