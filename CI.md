@@ -12,12 +12,12 @@
 - 각 조합: dependency resolution → static analysis → JIT smoke → AOT compile → AOT smoke. JPEG Q90 golden byte equality, PNG SIMD/scalar equality, 오류 후 복구, 크기, 반복 버퍼 해제를 검사한다.
 - 모든 SDK는 루트 lockfile을 강제한다. 별도 Linux / Dart 3.10.0 minimum 작업에서 pub downgrade 후 분석·API·동기/worker JIT/AOT를 실행한다. 해석한 lockfile과 의존성 목록은 artifact로 보관한다.
 - formatter 출력의 버전 차이로 옛 SDK가 실패하지 않도록 포맷 검사는 최신 stable에서만 필수로 수행한다.
-- 어느 조합이든 실패하면 최종 `required` job이 실패한다. 브랜치 보호를 사용할 경우 이 job을 필수 검사로 지정한다. 0.1.2에서는 최신 SDK의 전체 golden 검사와 Linux quality/memory job도 필수로 연결했다. 상세 범위와 판정 기준은 [GATES.md](GATES.md)를 참고한다.
+- 어느 조합이든 실패하면 최종 `required` job이 실패한다. 브랜치 보호를 사용할 경우 이 job을 필수 검사로 지정한다. 0.1.2에서는 최신 SDK의 전체 golden 검사와 Linux quality/memory job도 필수로 연결했다. golden·quality·memory·distribution 게이트는 `.github/workflows/ci.yml`과 `tool/` 스크립트에 정의한다.
 - native artifact 보존 기간 7일. 게시·릴리스 생성·pub.dev 업로드·외부 메시지 전송은 하지 않는다.
 
 ## 실제 검증 상태
 
-main의 595c3b8은 [원격 CI](https://github.com/brody-0125/slim-pixels/actions/runs/35450627457)를 통과했습니다. v0.1.3 태그 워크플로는 [35450637345](https://github.com/brody-0125/slim-pixels/actions/runs/35450637345)에서 required 게이트와 draft release를 통과했습니다. 이전 로컬 기록은 [doc/VALIDATION.md](doc/VALIDATION.md)에 보존합니다.
+main의 595c3b8은 [원격 CI](https://github.com/brody-0125/slim-pixels/actions/runs/35450627457)를 통과했습니다. v0.1.3 태그 워크플로는 [35450637345](https://github.com/brody-0125/slim-pixels/actions/runs/35450637345)에서 required 게이트와 draft release를 통과했습니다.
 
 패키지에는 Windows/Linux x64 바이너리를 포함합니다. build hook이 플랫폼 자산을 번들링하므로 소비자 실행에 LD_LIBRARY_PATH 설정을 요구하지 않습니다. 네이티브 C 검증 harness는 자체 링크 환경을 설정합니다. 성능 측정값은 보고용이며 merge 차단 임계치가 아닙니다.
 
@@ -39,7 +39,7 @@ dart run test/worker.dart
 
 ## Code Assets 도입 이후
 
-현재 AOT 명령은 `dart compile exe` 대신 `python tool/aot_check.py <검증 Dart 파일> <인수...>`입니다. 모든 SDK/OS에서 별도 소비자 설치와 이동한 번들 실행도 검사합니다. v 태그에서는 전체 게이트 성공 후 플랫폼별 바이너리를 draft release로 묶습니다. 자세한 배포 계약은 `doc/DISTRIBUTION.md`를 참고하세요.
+현재 AOT 명령은 `dart compile exe` 대신 `python tool/aot_check.py <검증 Dart 파일> <인수...>`입니다. 모든 SDK/OS에서 별도 소비자 설치와 이동한 번들 실행도 검사합니다. v 태그에서는 전체 게이트 성공 후 플랫폼별 바이너리를 draft release로 묶습니다. CLI 배포는 `dart build cli`로 생성한 `bundle/` 전체를 이동합니다.
 
 ## ABI 2 공개 계약
 

@@ -121,7 +121,7 @@ Operations run in list order. A crop followed by a resize skips the cropped-imag
 - Invalid arguments raise `ArgumentError`. Known execution failures use `SlimPixelsException`. Branch on `code`; treat `message` as diagnostic text. An operation failure has a zero-based `operationIndex`. Worker methods report call errors through their Futures.
 - VM memory exhaustion, process termination, and Rust panics fall outside the recoverable exception contract.
 
-See the [API contract](https://github.com/brody-0125/slim-pixels/blob/main/doc/API.md) for the type list, error codes, and ownership rules. Supporting documents are in Korean.
+Run `dart doc` for generated API reference. The sections above list error codes, ownership rules, and compatibility limits.
 
 ## Native Builds
 
@@ -138,7 +138,7 @@ For a CLI application, use `dart build cli` and distribute the entire generated 
 bash tool/build-linux.sh
 ```
 
-The Windows build requires MSVC and Rust 1.97.1. See [distribution requirements](https://github.com/brody-0125/slim-pixels/blob/main/doc/DISTRIBUTION.md), [CI](https://github.com/brody-0125/slim-pixels/blob/main/CI.md), and [quality gates](https://github.com/brody-0125/slim-pixels/blob/main/GATES.md). The [validation record](https://github.com/brody-0125/slim-pixels/blob/main/doc/VALIDATION.md) distinguishes local checks from CI configuration. Performance depends on the input and runtime environment.
+The Windows build requires MSVC and Rust 1.97.1. See [CI](https://github.com/brody-0125/slim-pixels/blob/main/CI.md) for supported SDKs, gates, and validation scope. Performance depends on the input and runtime environment.
 
 ## Testing
 
