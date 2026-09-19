@@ -119,7 +119,7 @@ Resize의 기본 필터는 `ResizeFilter.lanczos3`이며 `triangle`도 제공합
 - 잘못된 선언적 인자는 `ArgumentError`, 알려진 실행 실패는 `SlimPixelsException`입니다. `code`로 분기하고 `message`는 파싱하지 마세요. 작업 실패의 `operationIndex`는 0부터 시작합니다.
 - VM 메모리 고갈, 프로세스 종료, Rust panic은 복구 가능한 예외로 보장하지 않습니다.
 
-공개 API 계약 ([doc/API.md](https://github.com/brody-0125/slim-pixels/blob/main/doc/API.md))에 타입 목록, 오류 코드, 소유권과 호환성 정책을 정리했습니다.
+타입 목록, 오류 코드, 소유권과 호환성 정책은 위 절과 `dart doc` 생성 API 문서를 참고하세요.
 
 ## 네이티브 빌드
 
@@ -136,7 +136,7 @@ Resize의 기본 필터는 `ResizeFilter.lanczos3`이며 `triangle`도 제공합
 bash tool/build-linux.sh
 ```
 
-Windows 빌드에는 MSVC와 Rust 1.97.1이 필요합니다. CI ([CI.md](https://github.com/brody-0125/slim-pixels/blob/main/CI.md)), 품질 게이트 ([GATES.md](https://github.com/brody-0125/slim-pixels/blob/main/GATES.md)), 배포 조건 ([doc/DISTRIBUTION.md](https://github.com/brody-0125/slim-pixels/blob/main/doc/DISTRIBUTION.md)), 검증 기록 ([doc/VALIDATION.md](https://github.com/brody-0125/slim-pixels/blob/main/doc/VALIDATION.md))을 참고하세요. 실제 성능은 입력과 환경에 따라 달라집니다.
+Windows 빌드에는 MSVC와 Rust 1.97.1이 필요합니다. 지원 SDK, 게이트, 검증 범위는 `.github/workflows/ci.yml`과 `tool/`에 정의합니다. 실제 성능은 입력과 환경에 따라 달라집니다.
 
 ## 테스트
 
@@ -163,7 +163,7 @@ python tool/worker_mutation_check.py dart
 
 ## 기여
 
-[기여 방법](https://github.com/brody-0125/slim-pixels/blob/main/CONTRIBUTING.md), [변경 기록](https://github.com/brody-0125/slim-pixels/blob/main/CHANGELOG.ko.md), [기여자](https://github.com/brody-0125/slim-pixels/graphs/contributors)를 참고하세요.
+[기여 방법](https://github.com/brody-0125/slim-pixels/blob/main/CONTRIBUTING.md), [변경 기록](https://github.com/brody-0125/slim-pixels/blob/main/CHANGELOG.md), [기여자](https://github.com/brody-0125/slim-pixels/graphs/contributors)를 참고하세요.
 
 ## 라이선스
 
