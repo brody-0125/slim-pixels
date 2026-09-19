@@ -2,13 +2,13 @@
 
 2026-09-13 기준 지원 SDK는 Dart >=3.10.0 <4.0.0이다. `.github/workflows/ci.yml`을 패키지 저장소 루트에 두면 PR, push, 수동 실행, 매주 월요일 03:17 UTC에 실행한다. 정기 실행은 GitHub 기본 브랜치에서 동작한다.
 
-`tool/dart_matrix.py`가 공식 stable archive를 조회해 **3.10.0부터 현재 최신 3.x까지 모든 stable patch**를 선택한다. 현재 최신은 3.13.3이며 24개 버전이다. 새 patch/minor는 다음 실행에 자동 포함된다. beta/dev는 포함하지 않는다. Dart 4가 stable이 되면 조용히 지원 범위를 늘리지 않고 명시적인 결정이 필요하도록 실패한다. API 장애·목록 누락도 빈 matrix 성공으로 처리하지 않는다.
+`tool/dart_matrix.py`가 공식 stable archive를 조회해 **3.10.0부터 현재 최신 3.x까지 모든 stable patch**를 선택한다. 현재 최신은 3.13.4이며 25개 버전이다. 새 patch/minor는 다음 실행에 자동 포함된다. beta/dev는 포함하지 않는다. Dart 4가 stable이 되면 조용히 지원 범위를 늘리지 않고 명시적인 결정이 필요하도록 실패한다. API 장애·목록 누락도 빈 matrix 성공으로 처리하지 않는다.
 
 ## 실행 구성
 
 - Windows Server 2022 x64 / Ubuntu 24.04 x64에서 Rust 1.97.1 native build와 unit test를 한 번씩 수행한다.
 - Linux JPEG 코덱은 고정 커밋 c85e6b905bf237038faa936dab160ebfc5da0344에서 SIMD ON으로 빌드한다. Windows는 패키지의 고정 코덱 DLL을 사용한다.
-- OS별 native artifact와 라이선스를 모든 Dart SDK job이 재사용한다. 현 시점 24 × 2 = 48개 SDK/OS 조합이며 최대 동시 실행은 6개다.
+- OS별 native artifact와 라이선스를 모든 Dart SDK job이 재사용한다. 현 시점 25 × 2 = 50개 SDK/OS 조합이며 최대 동시 실행은 6개다.
 - 각 조합: dependency resolution → static analysis → JIT smoke → AOT compile → AOT smoke. JPEG Q90 golden byte equality, PNG SIMD/scalar equality, 오류 후 복구, 크기, 반복 버퍼 해제를 검사한다.
 - 모든 SDK는 루트 lockfile을 강제한다. 별도 Linux / Dart 3.10.0 minimum 작업에서 pub downgrade 후 분석·API·동기/worker JIT/AOT를 실행한다. 해석한 lockfile과 의존성 목록은 artifact로 보관한다.
 - formatter 출력의 버전 차이로 옛 SDK가 실패하지 않도록 포맷 검사는 최신 stable에서만 필수로 수행한다.
@@ -17,7 +17,7 @@
 
 ## 실제 검증 상태
 
-main의 b01b24f는 [원격 CI](https://github.com/brody-0125/slim-pixels/actions/runs/34758504730)를 통과했습니다. 릴리스 브랜치의 최종 커밋은 별도 CI 검증 대상입니다. 이전 로컬 기록은 [doc/VALIDATION.md](doc/VALIDATION.md)에 보존합니다.
+main의 cad4070은 [원격 CI](https://github.com/brody-0125/slim-pixels/actions/runs/35445782352)를 통과했습니다. 릴리스 준비 커밋의 CI는 별도 검증 대상입니다. 이전 로컬 기록은 [doc/VALIDATION.md](doc/VALIDATION.md)에 보존합니다.
 
 패키지에는 Windows/Linux x64 바이너리를 포함합니다. build hook이 플랫폼 자산을 번들링하므로 소비자 실행에 LD_LIBRARY_PATH 설정을 요구하지 않습니다. 네이티브 C 검증 harness는 자체 링크 환경을 설정합니다. 성능 측정값은 보고용이며 merge 차단 임계치가 아닙니다.
 

@@ -30,7 +30,7 @@
 
 버전과 일치하는 v 태그를 push하면 전체 required 게이트 성공 후 동일한 native artifact를 받아 `tool/release_bundle.py`로 플랫폼별 zip을 만든다. SHA256SUMS, ABI/소스 커밋 메타데이터, 라이선스·제3자 고지가 포함된다. GitHub에는 draft release로 올리며 pub.dev 게시와 공개 전환은 하지 않는다. 기존 draft가 같은 태그로 있으면 생성이 실패하므로 재실행 전에 기존 draft 상태를 확인해야 한다.
 
-0.1.2 릴리스 준비 브랜치는 repository/issue URL과 플랫폼을 설정하고 publish_to 제한을 해제했다. v0.1.2 태그 및 원격 release 작업은 아직 실행하지 않았다. 게시 전 최종 패키지 구성에서 dry-run과 소비자 검증을 완료해야 한다.
+0.1.2는 v0.1.2 태그와 GitHub draft release, pub.dev 게시를 마쳤다. 0.1.3은 같은 태그·draft release 절차를 따른다. 게시 전 최종 패키지 구성에서 dry-run을 완료해야 한다.
 
 ## 아직 남은 배포 조건
 
@@ -56,6 +56,6 @@
 - 릴리스 zip 두 개 생성·번들 해시 확인 통과. 기존 코덱의 출력 골든을 변경하지 않음.
 - pub dry-run은 오류 없이 완료되지만 repository URL, 변경 파일, docs 디렉터리 이름 경고가 남음. pub.dev 게시 준비 완료를 의미하지 않음.
 
-## 0.1.2 게시 후보
+## 0.1.3 게시 후보
 
-릴리스 브랜치의 native/bin은 b01b24f의 성공한 CI 실행 34758504730에서 내려받은 Windows/Linux artifact와 SHA256SUMS.json을 사용합니다. 로컬의 과거 빌드와 바이트가 달라 동일 산출물로 교체했습니다. 코덱 출처와 지원 플랫폼 제한은 THIRD_PARTY_NOTICES.md 및 위 배포 조건을 따릅니다. 버전은 0.1.2, ABI는 2입니다. 태그 생성과 pub.dev 게시는 별도 단계입니다.
+native/bin은 cad4070의 성공한 CI 실행 [35445782352](https://github.com/brody-0125/slim-pixels/actions/runs/35445782352)에서 내려받은 Windows/Linux artifact와 SHA256SUMS.json을 사용합니다. 커밋된 0.1.2 번들과 바이트가 달라 동일 산출물로 교체했습니다. Windows `turbojpeg.dll` 해시는 기존 코덱과 같습니다. 코덱 출처와 지원 플랫폼 제한은 THIRD_PARTY_NOTICES.md 및 위 배포 조건을 따릅니다. 버전은 0.1.3, ABI는 2입니다. 태그 생성과 pub.dev 게시는 별도 단계입니다.
