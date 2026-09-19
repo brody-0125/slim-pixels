@@ -53,4 +53,6 @@ release/v0-1-2는 b01b24f의 성공한 CI 실행 34758504730에 포함된 native
 
 ## 0.1.3 배포 준비 검증
 
-cad4070은 원격 CI [35445782352](https://github.com/brody-0125/slim-pixels/actions/runs/35445782352)를 통과했습니다. native/bin은 그 실행의 Windows/Linux artifact로 교체합니다. 버전은 0.1.3이며 ABI는 2입니다. 태그 생성과 pub.dev 게시는 이 커밋 이후 단계입니다.
+cad4070은 원격 CI [35445782352](https://github.com/brody-0125/slim-pixels/actions/runs/35445782352)를 통과했습니다. native/bin은 그 실행의 Windows/Linux artifact로 교체합니다. 버전은 0.1.3이며 ABI는 2입니다.
+
+이후 v0.1.3 태그와 GitHub draft release가 완료되었습니다. 태그 워크플로는 [35450637345](https://github.com/brody-0125/slim-pixels/actions/runs/35450637345)입니다. pub.dev 게시는 이 기록 시점 기준 별도 단계입니다.

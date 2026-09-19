@@ -17,7 +17,7 @@
 
 ## 실제 검증 상태
 
-main의 cad4070은 [원격 CI](https://github.com/brody-0125/slim-pixels/actions/runs/35445782352)를 통과했습니다. 릴리스 준비 커밋의 CI는 별도 검증 대상입니다. 이전 로컬 기록은 [doc/VALIDATION.md](doc/VALIDATION.md)에 보존합니다.
+main의 595c3b8은 [원격 CI](https://github.com/brody-0125/slim-pixels/actions/runs/35450627457)를 통과했습니다. v0.1.3 태그 워크플로는 [35450637345](https://github.com/brody-0125/slim-pixels/actions/runs/35450637345)에서 required 게이트와 draft release를 통과했습니다. 이전 로컬 기록은 [doc/VALIDATION.md](doc/VALIDATION.md)에 보존합니다.
 
 패키지에는 Windows/Linux x64 바이너리를 포함합니다. build hook이 플랫폼 자산을 번들링하므로 소비자 실행에 LD_LIBRARY_PATH 설정을 요구하지 않습니다. 네이티브 C 검증 harness는 자체 링크 환경을 설정합니다. 성능 측정값은 보고용이며 merge 차단 임계치가 아닙니다.
 
