@@ -51,7 +51,7 @@ The table covers Cargo resolved dependencies (including optional/target-specific
 
 These packages are resolved for the build hook and Dart package. This is not a claim that every dependency is included in the native binary.
 
-- code_assets 1.2.1: `third_party/dart/code_assets/LICENSE`
+- code_assets 2.1.0: `third_party/dart/code_assets/LICENSE`
 - collection 1.19.1: `third_party/dart/collection/LICENSE`
 - crypto 3.0.7: `third_party/dart/crypto/LICENSE`
 - hooks 2.2.0: `third_party/dart/hooks/LICENSE`

@@ -1,41 +1,48 @@
 # Changelog
 
+English | [Korean](CHANGELOG.ko.md)
+
+## 0.1.3
+
+- Publish an English `CHANGELOG.md` so pub.dev Dart file conventions pass. Korean notes remain in `CHANGELOG.ko.md`.
+- Allow `package:code_assets` 2.x.
+
 ## 0.1.2
 
-- 단일 isolate와 제한된 FIFO 큐를 가진 SlimPixelsWorker를 추가했습니다. 입력 스냅샷, drain 후 close, 용량 초과·비정상 종료 오류를 제공합니다.
+- Add `SlimPixelsWorker` with a single isolate and a bounded FIFO queue. Provide input snapshots, drain-then-close, and errors for capacity overflow and unexpected worker exit.
 
-- **Breaking:** Map 기반 transform과 런타임 라이브러리 경로 생성자를 제거하고 transformSync, 타입이 있는 작업·포맷별 옵션·읽기 전용 ImageResult를 도입했습니다.
-- exact/inside/cover 크기 정책, 소수 좌표 중앙 crop, 확대 금지와 작업별 오류 위치를 추가했습니다.
-- ABI 2로 출력 크기·포맷·구조화된 오류 코드를 전달합니다. 예전 바이너리는 새 공개 API와 호환되지 않습니다.
-- 애니메이션과 비불투명 JPEG 출력을 거부합니다. 불투명 RGBA는 JPEG 인코딩 전에 RGB로 변환합니다.
-- 기존 golden 322개는 바이트 동일성을 유지하고, 투명 JPEG 12개는 명시적인 거부 정책으로 검사합니다.
-- 공식 권장 Dart lint와 공개 API 문서 검사를 활성화했습니다. 배포 예제와 API 계약 문서를 갱신했습니다.
+- **Breaking:** Remove Map-based transform and runtime library-path constructors. Introduce `transformSync`, typed operations, per-format encoding options, and a read-only `ImageResult`.
+- Add exact/inside/cover size policies, fractional-coordinate center crop, no-upscale, and per-operation error positions.
+- Pass output size, format, and structured error codes through ABI 2. Older binaries are not compatible with the new public API.
+- Reject animated images and non-opaque JPEG output. Convert opaque RGBA to RGB before JPEG encoding.
+- Keep 322 existing goldens byte-identical and cover 12 transparent JPEG cases with an explicit rejection policy.
+- Enable the official Dart lints and public API documentation checks. Refresh the distribution example and API contract docs.
 
-- 포함된 네이티브 자산을 build hook으로 검증·번들링하고 경로 없는 생성자를 추가했습니다.
-- 소비자 설치·이동한 AOT 번들 게이트를 추가했습니다.
-- AOT 검증을 `dart build cli`로 전환하고 검증된 바이너리의 draft release 작업을 추가했습니다.
+- Validate and bundle the included native assets with a build hook, and add a constructor that needs no library path.
+- Add consumer-install and relocated AOT bundle gates.
+- Switch AOT verification to `dart build cli` and add a draft-release job for validated binaries.
 
-첫 공개를 위한 준비 상태입니다. 패키지 게시나 원격 릴리스가 완료됐다는 의미는 아닙니다.
+This release prepares the first public package. It does not mean publication or a remote release has completed.
 
-### 제공 기능
+### Features
 
-- 바이트 배열 입력에 대한 자르기, 크기 변경, 회전 및 반전
-- PNG, JPEG, 무손실 WebP 출력
-- 자르기와 크기 변경이 연속될 때 중간 이미지 복사 생략
-- CPU가 지원하는 벡터 연산을 사용하는 크기 변경
-- RGB8 JPEG 품질 90의 4:4:4 샘플링과 심벌 분포에 따른 부호표 구성
-- 요청 단위 버퍼 소유권과 성공·오류 경로의 자원 해제
-- Windows/Linux x64 바이너리 및 소스 빌드
+- Crop, resize, rotate, and flip from a byte-array input
+- PNG, JPEG, and lossless WebP output
+- Skip intermediate image copies when crop and resize are consecutive
+- Resize with CPU-supported vector operations
+- RGB8 JPEG quality 90 with 4:4:4 sampling and symbol-distribution Huffman tables
+- Per-request buffer ownership and resource release on success and error paths
+- Windows/Linux x64 binaries and source builds
 
-### 검증과 문서
+### Validation and documentation
 
-- Dart 3.10.0부터 최신 3.x stable patch까지 검사하는 CI 구성
-- 322개 출력·12개 정책 거부 회귀 검사, 인코딩 품질·헤더·해시 검사, 메모리 검사 게이트
-- 실행 시간은 보고용으로 기록하며 고정 성능 임계값으로 병합을 차단하지 않음
-- 요청 형식, 지원 범위, 제약, 빌드 및 기여 방법 문서
-- MIT 저작권자: Seokhyeon Kim. 제3자 라이선스는 별도 유지
+- CI covering Dart 3.10.0 through the latest 3.x stable patch
+- 322 output and 12 policy-rejection regressions, encoding quality/header/hash checks, and a memory gate
+- Runtime is recorded for reporting and does not block merges on a fixed performance threshold
+- Documentation for request format, support range, constraints, build, and contribution
+- MIT copyright: Seokhyeon Kim. Third-party licenses are kept separately
 
-## 공개 전 개발 기록
+## Pre-release development notes
 
-- **0.1.1:** SDK 하한 조정, Linux x64 링크 경로, JIT/AOT CI 및 기준 JPEG 검사 추가
-- **0.1.0:** Dart API와 네이티브 처리 경계 분리, 이미지 변환·인코딩 및 빌드·검증 스크립트 구성
+- **0.1.1:** Raise the SDK lower bound, fix the Linux x64 link path, and add JIT/AOT CI plus baseline JPEG checks
+- **0.1.0:** Separate the Dart API from the native processing boundary, and set up image transform/encode plus build and validation scripts

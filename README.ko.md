@@ -21,11 +21,11 @@ Dart에서 이미지의 크기와 형태를 변환하고 PNG, JPEG, 무손실 We
 
 ## 설치
 
-0.1.2가 pub.dev에 게시되면 다음 의존성을 추가합니다. 현재 브랜치는 릴리스 준비 상태이며 게시는 아직 진행하지 않았습니다.
+0.1.3가 pub.dev에 게시되면 다음 의존성을 추가합니다. 현재 브랜치는 릴리스 준비 상태이며 게시는 아직 진행하지 않았습니다.
 
 ```yaml
 dependencies:
-  slim_pixels: ^0.1.2
+  slim_pixels: ^0.1.3
 ```
 
 ## 빠른 시작
@@ -163,7 +163,7 @@ python tool/worker_mutation_check.py dart
 
 ## 기여
 
-[기여 방법](https://github.com/brody-0125/slim-pixels/blob/main/CONTRIBUTING.md), [변경 기록](https://github.com/brody-0125/slim-pixels/blob/main/CHANGELOG.md), [기여자](https://github.com/brody-0125/slim-pixels/graphs/contributors)를 참고하세요.
+[기여 방법](https://github.com/brody-0125/slim-pixels/blob/main/CONTRIBUTING.md), [변경 기록](https://github.com/brody-0125/slim-pixels/blob/main/CHANGELOG.ko.md), [기여자](https://github.com/brody-0125/slim-pixels/graphs/contributors)를 참고하세요.
 
 ## 라이선스
 
