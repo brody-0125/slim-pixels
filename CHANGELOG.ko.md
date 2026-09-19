@@ -6,6 +6,7 @@
 
 - pub.dev Dart 파일 규칙을 통과하도록 `CHANGELOG.md`를 영어로 게시합니다. 한국어 기록은 `CHANGELOG.ko.md`에 유지합니다.
 - `package:code_assets` 2.x를 허용합니다.
+- SDK compatibility CI 실행 35445782352의 Windows/Linux 네이티브 라이브러리를 포함합니다.
 
 ## 0.1.2
 

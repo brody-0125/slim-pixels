@@ -6,6 +6,7 @@ English | [Korean](CHANGELOG.ko.md)
 
 - Publish an English `CHANGELOG.md` so pub.dev Dart file conventions pass. Korean notes remain in `CHANGELOG.ko.md`.
 - Allow `package:code_assets` 2.x.
+- Bundle Windows/Linux native libraries from SDK compatibility CI run 35445782352.
 
 ## 0.1.2
 

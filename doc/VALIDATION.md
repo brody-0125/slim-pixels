@@ -49,4 +49,8 @@ CI에는 모든 SDK의 locked 검사, 독립 minimum 의존성 필수 작업, �
 
 ## 0.1.2 배포 준비 검증
 
-release/v0-1-2는 b01b24f의 성공한 CI 실행 34758504730에 포함된 native artifact와 해시를 적용합니다. Windows/Linux에서 별도 소비자 JIT, 해시 변조 거부, 소스 삭제 후 이동한 AOT 번들의 동기/worker JPEG golden을 다시 확인했습니다. 공개 API와 두 README의 Dart 예제, dartdoc 및 정적 분석을 확인했습니다. 버전은 0.1.2이며 pub.dev 게시는 아직 실행하지 않았습니다.
+release/v0-1-2는 b01b24f의 성공한 CI 실행 34758504730에 포함된 native artifact와 해시를 적용합니다. Windows/Linux에서 별도 소비자 JIT, 해시 변조 거부, 소스 삭제 후 이동한 AOT 번들의 동기/worker JPEG golden을 다시 확인했습니다. 공개 API와 두 README의 Dart 예제, dartdoc 및 정적 분석을 확인했습니다. 이후 v0.1.2 태그와 pub.dev 0.1.2 게시가 완료되었습니다.
+
+## 0.1.3 배포 준비 검증
+
+cad4070은 원격 CI [35445782352](https://github.com/brody-0125/slim-pixels/actions/runs/35445782352)를 통과했습니다. native/bin은 그 실행의 Windows/Linux artifact로 교체합니다. 버전은 0.1.3이며 ABI는 2입니다. 태그 생성과 pub.dev 게시는 이 커밋 이후 단계입니다.
